@@ -4,6 +4,12 @@ A Nintendo DS emulator app for Android, built for handhelds with physical contro
 
 The name is a joke that stuck: SeedlessDS is the smaller sibling of WatermelonDS, using the same watermelon idea with the seeds taken out.
 
+<p align="center">
+<img width="350" height="300" alt="Screenshot_20260807-202219" src="https://github.com/user-attachments/assets/9e9fbcee-28d5-4938-8b81-bbf5eb30fc36" />
+<img width="350" height="300" alt="Screenshot_20260807-202227" src="https://github.com/user-attachments/assets/74c48268-3037-4c81-9abe-400f0b790b9f" />
+<img width="350" height="300" alt="Screenshot_20260807-202258" src="https://github.com/user-attachments/assets/b23fb273-9a10-4244-b2b5-f05003c48c4d" />
+<p/>
+
 > **Current status:** SeedlessDS `1.0.0-beta1` is a working Android beta tested on real dual-screen hardware. The app is built around the **DraStic r2.6.0.4a** core, while the new Android frontend, UI, library, input layer, dual-screen renderer, and RetroAchievements bridge are SeedlessDS work.
 >
 > The long-term goal is to publish and maintain the parts of the project that are ours, document the core boundary clearly, and move toward a clean, publishable emulation-core reimplementation over time. See [Roadmap](#roadmap).
