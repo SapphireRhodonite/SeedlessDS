@@ -1,0 +1,813 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="achievement_count_ratio" translatable="false">"%1$d/%2$d"</string>
+    <string name="achievement_menu_progress" translatable="false">" %1$d/%2$d"</string>
+    <string name="achievements_achievement_unlocked">"ACHIEVEMENT UNLOCKED  ·  +%1$d"</string>
+    <string name="achievements_achievement_unlocked_2">"ACHIEVEMENT UNLOCKED"</string>
+    <plurals name="achievements_achievements_casual">
+        <item quantity="one">"%1$d / %2$d achievement  ·  Casual"</item>
+        <item quantity="other">"%1$d / %2$d achievements  ·  Casual"</item>
+    </plurals>
+    <string name="achievements_all_achievements_earned_casual">"All achievements earned  ·  Casual"</string>
+    <plurals name="achievements_all_achievements_earned_casual_2">
+        <item quantity="one">"%1$d achievement earned  ·  Casual"</item>
+        <item quantity="other">"All %1$d achievements earned  ·  Casual"</item>
+    </plurals>
+    <string name="achievements_casual_mode">"Casual mode"</string>
+    <string name="achievements_game_completed">"GAME COMPLETED"</string>
+    <string name="achievements_leaderboard">"LEADERBOARD"</string>
+    <string name="achievements_locked">"  LOCKED"</string>
+    <string name="achievements_now_playing">"NOW PLAYING"</string>
+    <string name="achievements_player">"player"</string>
+    <plurals name="achievements_points_casual">
+        <item quantity="one">"%1$d point  ·  Casual"</item>
+        <item quantity="other">"%1$d points  ·  Casual"</item>
+    </plurals>
+    <string name="achievements_rank_of">"Rank #%1$d of %2$d  ·  %3$s"</string>
+    <string name="achievements_result_submitted">"Result submitted"</string>
+    <string name="achievements_sign_in_at_settings_retroachievements_to_see">"Sign in at Settings → RetroAchievements to see your achievements."</string>
+    <string name="achievements_subset_completed">"SUBSET COMPLETED"</string>
+    <string name="achievements_this_game_has_no_achievements">"This game has no achievements."</string>
+    <string name="achievements_this_game_isn_t_identified_in_retroachievements">"This game isn\'t identified in RetroAchievements."</string>
+    <string name="achievements_unlocked">"  UNLOCKED"</string>
+    <string name="achievements_welcome">"Welcome, %1$s!"</string>
+    <string name="app_name" translatable="false">"SeedlessDS"</string>
+    <string name="birthday_month_day" translatable="false">"%1$s %2$d"</string>
+    <string name="boot_nintendo_ds" translatable="false">"NINTENDO DS"</string>
+    <string name="boot_nintendo_ds_2" translatable="false">"Nintendo DS"</string>
+    <string name="boot_seedless" translatable="false">"seedless"</string>
+    <string name="boot_starting_game">"Starting game"</string>
+    <string name="button_a" translatable="false">"A"</string>
+    <string name="button_b" translatable="false">"B"</string>
+    <string name="button_l" translatable="false">"L"</string>
+    <string name="button_r" translatable="false">"R"</string>
+    <string name="button_x" translatable="false">"X"</string>
+    <string name="button_y" translatable="false">"Y"</string>
+    <string name="cheats_add_cheat">"Add cheat"</string>
+    <string name="cheats_add_your_own_cheats_with_the_button">"Add your own cheats with the + button."</string>
+    <string name="cheats_apply_this_code_to_the_game">"Apply this code to the game."</string>
+    <string name="cheats_cheat_details">"Cheat details"</string>
+    <string name="cheats_cheats_apply_when_you_resume">"CHEATS APPLY WHEN YOU RESUME"</string>
+    <string name="cheats_code_xxxxxxxx_yyyyyyyy">"Code (XXXXXXXX YYYYYYYY)"</string>
+    <string name="cheats_couldn_t_add_the_cheat">"Couldn\'t add the cheat."</string>
+    <string name="cheats_couldn_t_save_the_cheat">"Couldn\'t save the cheat."</string>
+    <string name="cheats_custom">"Custom"</string>
+    <string name="cheats_custom_cheat">"Custom cheat"</string>
+    <string name="cheats_database">"Database"</string>
+    <string name="cheats_edit_cheat">"Edit cheat"</string>
+    <string name="cheats_enable_cheat">"Enable cheat"</string>
+    <string name="cheats_invalid_code_format_8_hex_digit_pairs">"Invalid code format (8-hex-digit pairs)."</string>
+    <plurals name="cheats_lines_of_code">
+        <item quantity="one">"%1$d line of code"</item>
+        <item quantity="other">"%1$d LINES OF CODE"</item>
+    </plurals>
+    <string name="cheats_new_custom_code">"New custom code"</string>
+    <string name="cheats_no_cheats_in_the_database_for_this_game">"No cheats in the database for this game."</string>
+    <string name="cheats_none_active">"None active"</string>
+    <string name="cheats_only_one">"only one"</string>
+    <string name="cheats_other">"Other"</string>
+    <string name="cheats_that_cheat_already_exists">"That cheat already exists."</string>
+    <string name="cheats_toggle">"Toggle"</string>
+    <string name="cheats_unnamed_cheat">"Unnamed cheat"</string>
+    <string name="common_accept">"Accept"</string>
+    <string name="common_achievements">"Achievements"</string>
+    <string name="common_achievements_2">"%1$s: %2$s/%3$s achievements"</string>
+    <string name="common_active">"Active: %1$d"</string>
+    <string name="common_active_2">"(Active)"</string>
+    <string name="common_active_3">"ACTIVE"</string>
+    <string name="common_active_4">"Active"</string>
+    <string name="common_all">"All"</string>
+    <string name="common_back">"Back"</string>
+    <string name="common_bottom">"Bottom"</string>
+    <string name="common_bottom_2">"BOTTOM"</string>
+    <string name="common_bottom_screen">"Bottom screen"</string>
+    <string name="common_cancel">"Cancel"</string>
+    <string name="common_change">"Change"</string>
+    <string name="common_cheats">"Cheats"</string>
+    <string name="common_clear">"Clear"</string>
+    <string name="common_close">"Close"</string>
+    <string name="common_close_2">"CLOSE"</string>
+    <string name="common_couldn_t_load_entries">"Couldn\'t load entries"</string>
+    <string name="common_cycle_layouts">"Cycle layouts"</string>
+    <string name="common_delete">"Delete"</string>
+    <string name="common_delete_2">"Delete %1$s?"</string>
+    <string name="common_ds" translatable="false">"DS"</string>
+    <string name="common_dsiware" translatable="false">"DSiWARE"</string>
+    <string name="common_dual_screen_presets">"Dual screen presets"</string>
+    <string name="common_dual_screen_presets_2">"DUAL SCREEN PRESETS"</string>
+    <string name="common_each_screen_holds_256_192_inside_its_panel">"Each screen holds 256:192 inside its panel instead of stretching."</string>
+    <string name="common_empty">"EMPTY"</string>
+    <string name="common_external_display">"External display"</string>
+    <string name="common_fast_forward">"Fast-forward"</string>
+    <string name="common_fast_forward_2">"Fast-Forward"</string>
+    <string name="common_favorite">"Favorite"</string>
+    <string name="common_favorites">"Favorites"</string>
+    <string name="common_fill_height">"Fill height"</string>
+    <string name="common_fill_width">"Fill width"</string>
+    <string name="common_game_settings">"Game settings"</string>
+    <plurals name="common_games">
+        <item quantity="one">"%1$d game"</item>
+        <item quantity="other">"%1$d games"</item>
+    </plurals>
+    <plurals name="common_games_2">
+        <item quantity="one">"%1$d game · "</item>
+        <item quantity="other">"%1$d games · "</item>
+    </plurals>
+    <string name="common_help">"Help"</string>
+    <string name="common_integer_scale">"Integer scale"</string>
+    <string name="common_keep_ds_ratio">"Keep DS ratio"</string>
+    <string name="common_leaderboards">"Leaderboards"</string>
+    <string name="common_left">"Left"</string>
+    <string name="common_load_state">"Load state"</string>
+    <string name="common_load_state_2">"LOAD STATE"</string>
+    <string name="common_loading">"Loading"</string>
+    <string name="common_mb" translatable="false">"%1$d MB"</string>
+    <string name="common_microphone_noise">"Microphone noise"</string>
+    <string name="common_name">"Name"</string>
+    <string name="common_navigate">"Navigate"</string>
+    <string name="common_no_game_identified">"No game identified"</string>
+    <string name="common_none">"None"</string>
+    <string name="common_ok">"OK"</string>
+    <string name="common_only_for">"Only for: %1$s  ·  %2$s"</string>
+    <string name="common_open">"Open"</string>
+    <string name="common_play">"Play"</string>
+    <string name="common_preset">"Preset"</string>
+    <string name="common_pts">"%1$d PTS"</string>
+    <string name="common_pts_2">"  ·  %1$d PTS"</string>
+    <string name="common_quick">"  QUICK"</string>
+    <string name="common_quick_load">"Quick load"</string>
+    <string name="common_quick_load_2">"Quick-Load"</string>
+    <string name="common_quick_save">"Quick save"</string>
+    <string name="common_quick_save_2">"Quick-Save"</string>
+    <string name="common_refresh">"Refresh"</string>
+    <string name="common_reset">"Reset"</string>
+    <string name="common_retroachievements" translatable="false">"RETROACHIEVEMENTS"</string>
+    <string name="common_retroachievements_2" translatable="false">"RetroAchievements"</string>
+    <string name="common_right">"Right"</string>
+    <string name="common_save">"Save"</string>
+    <string name="common_save_state">"Save state"</string>
+    <string name="common_save_state_2">"SAVE STATE"</string>
+    <string name="common_scales_by_a_whole_number_so_a_ds_pixel_is">"Scales by a whole number, so a DS pixel is always the same size."</string>
+    <string name="common_scaling">"Scaling"</string>
+    <string name="common_select">"SELECT"</string>
+    <string name="common_select_2">"Select"</string>
+    <string name="common_settings">"Settings"</string>
+    <string name="common_settings_2">"Settings · "</string>
+    <string name="common_start">"START"</string>
+    <string name="common_start_2">"Start"</string>
+    <string name="common_status">"Status"</string>
+    <string name="common_swap_layouts_1_2">"Swap layouts 1·2"</string>
+    <string name="common_swap_screens">"Swap screens"</string>
+    <string name="common_system_tools">"System tools"</string>
+    <string name="common_this_device">"This device"</string>
+    <string name="common_top">"Top"</string>
+    <string name="common_top_2">"TOP"</string>
+    <string name="common_top_screen">"Top screen"</string>
+    <string name="common_turbo_rapid_fire">"Turbo (rapid-fire)"</string>
+    <string name="common_vertical_alignment">"Vertical alignment"</string>
+    <string name="common_view">"View"</string>
+    <string name="control_scale_format" translatable="false" formatted="false">"%.2fx"</string>
+    <string name="cycle_layouts_symbol" translatable="false">"↻"</string>
+    <string name="date_time_value" translatable="false">"%1$s  %2$s"</string>
+    <string name="detail_suffix" translatable="false">" · %1$s"</string>
+    <string name="direction_down_symbol" translatable="false">"▼"</string>
+    <string name="direction_left_symbol" translatable="false">"◄"</string>
+    <string name="direction_right_symbol" translatable="false">"►"</string>
+    <string name="direction_up_symbol" translatable="false">"▲"</string>
+    <string name="empty_value" translatable="false">"—"</string>
+    <string name="emu_emulation">"Emulation"</string>
+    <string name="emu_failed_to_load_rom">"Failed to load ROM"</string>
+    <string name="emu_game_paused_tap_to_resume">"Game paused — tap to resume"</string>
+    <string name="emu_load_error_description">"The ROM may be corrupt or in an unsupported format. If it\'s an encrypted ROM, it needs the real Nintendo BIOS (install it in Settings › System tools)."</string>
+    <string name="external_continue_from_slot">"  ·  continue from slot %1$d"</string>
+    <string name="external_detail_suffix" translatable="false">"  ·  %1$s"</string>
+    <string name="external_empty_press_to_save">"EMPTY - PRESS TO SAVE"</string>
+    <string name="external_locked">"LOCKED"</string>
+    <string name="external_unlocked">"UNLOCKED"</string>
+    <string name="help_about">"About"</string>
+    <string name="help_about_body">"SeedlessDS is a Nintendo DS emulator for Android with customizable controls and RetroAchievements support.\n\nCommercial game ROMs and original Nintendo BIOS files are not included."</string>
+    <string name="help_cheats_body">"Menu › Cheats: enable cheats from the game database or create your own (Action Replay, pairs of 8 hex digits)."</string>
+    <string name="help_controls">"Controls"</string>
+    <string name="help_controls_body">"• Tap ☰ (or the Back button) to open the game menu.\n• Use a physical gamepad or the on-screen buttons. The DS touch screen is the bottom screen: tap it to aim/type.\n• Remap the gamepad in Settings › External controller."</string>
+    <string name="help_faq">"FAQ"</string>
+    <string name="help_faq_body">"• Why do some games ask for the real BIOS? — Encrypted ROMs need the ARM7 BIOS dumped from your console. Install it in Settings › System tools.\n• How do I change the screen layout? — Settings › Screens › Layout.\n• Can I use a physical controller? — Yes, it is detected automatically; remap it in Settings › Physical controller.\n• Where are my game saves? — In app storage by default. Change the location in Settings › Saves and states, or export app data from System tools."</string>
+    <string name="help_features_body">"A game library with covers, savestates with thumbnails, controller mapping, customizable screen layouts, cheats, user profiles and RetroAchievements. Higher 3D resolutions, dynamic resolution and external displays are supported."</string>
+    <string name="help_save_states">"Save states"</string>
+    <string name="help_save_states_body">"Menu › Save/Load state: 10 slots with thumbnail. Slot 10 is the quick save/autosave slot."</string>
+    <string name="help_settings_body">"Video, Screens, Virtual gamepad, Audio, System (DS firmware), General and Advanced. Changes are applied instantly."</string>
+    <string name="help_user_guide_and_about">"User guide and about"</string>
+    <string name="help_what_s_new">"What\'s new"</string>
+    <string name="keymap_device">"Device"</string>
+    <string name="keymap_down">"Down"</string>
+    <string name="keymap_ds_button">"DS button: %1$s"</string>
+    <string name="keymap_ds_buttons">"DS buttons"</string>
+    <string name="keymap_emulator_functions">"Emulator functions"</string>
+    <string name="keymap_map">"Map"</string>
+    <string name="keymap_map_controller">"Map controller"</string>
+    <string name="keymap_mapping_profile">"Mapping profile"</string>
+    <string name="keymap_name_device">"Name device"</string>
+    <string name="keymap_paired_bluetooth_devices">"Paired Bluetooth devices:"</string>
+    <string name="keymap_physical_gamepad">"Physical gamepad"</string>
+    <string name="keymap_press_a_key">"Press a key"</string>
+    <string name="keymap_press_the_physical_button_for">"Press the physical button for: %1$s"</string>
+    <string name="keymap_profile">"profile "</string>
+    <string name="keymap_profile_2">"Profile %1$d"</string>
+    <string name="keymap_profile_device">"Profile device"</string>
+    <string name="keymap_show_hide_buttons">"Show/hide buttons"</string>
+    <string name="keymap_unassigned">"(unassigned)"</string>
+    <string name="keymap_unassigned_2">"Unassigned"</string>
+    <string name="keymap_unnamed">"(unnamed)"</string>
+    <string name="keymap_up">"Up"</string>
+    <string name="label_with_count" translatable="false">"%1$s · %2$d"</string>
+    <string name="language_english" translatable="false">"English"</string>
+    <string name="language_french" translatable="false">"Français"</string>
+    <string name="language_german" translatable="false">"Deutsch"</string>
+    <string name="language_italian" translatable="false">"Italiano"</string>
+    <string name="language_japanese" translatable="false">"日本語"</string>
+    <string name="language_spanish" translatable="false">"Español"</string>
+    <string name="leaderboard_rank" translatable="false">"#%1$d"</string>
+    <string name="leaderboard_rank_user" translatable="false">"#%1$d  %2$s"</string>
+    <string name="leaderboards_around_me">"Around me"</string>
+    <string name="leaderboards_leaderboard">"Leaderboard"</string>
+    <string name="leaderboards_live_tracking_and_submission_require_hardcore">"Live tracking and submission require Hardcore mode."</string>
+    <string name="leaderboards_no_entries_yet">"No entries yet."</string>
+    <string name="leaderboards_sign_in_at_settings_retroachievements_to_see">"Sign in at Settings → RetroAchievements to see leaderboards."</string>
+    <string name="leaderboards_this_game_has_no_leaderboards">"This game has no leaderboards."</string>
+    <string name="library_a_z" translatable="false">"A-Z"</string>
+    <string name="library_add_a_folder_with_nds_roms_or_open_one_directly">"Add a folder with .nds ROMs, or open one directly."</string>
+    <string name="library_add_folder">"Add folder"</string>
+    <string name="library_add_this_game_to_the_home_screen">"Add this game to the home screen."</string>
+    <string name="library_all_games">"All games"</string>
+    <string name="library_already_exists">"Already exists"</string>
+    <string name="library_close_search">"Close search"</string>
+    <string name="library_config_for_this_game_only">"Config for this game only."</string>
+    <string name="library_continue_playing">"Continue playing"</string>
+    <string name="library_create">"Create"</string>
+    <string name="library_create_shortcut">"Create shortcut"</string>
+    <string name="library_delete_the_profile">"Delete the profile \"%1$s\"?"</string>
+    <string name="library_ds_games">"DS games"</string>
+    <string name="library_each_profile_keeps_its_own_settings_and_key">"Each profile keeps its own settings and key mappings."</string>
+    <string name="library_filter">"Filter"</string>
+    <string name="library_folder">"Folder"</string>
+    <string name="library_folders">"Folders"</string>
+    <plurals name="library_games_profile">
+        <item quantity="one">"%1$d game · profile %2$s"</item>
+        <item quantity="other">"%1$d games · profile %2$s"</item>
+    </plurals>
+    <string name="library_grid_view">"Grid view"</string>
+    <string name="library_h">"%1$d h"</string>
+    <string name="library_in_this_folder">"In this folder"</string>
+    <string name="library_lb" translatable="false">"LB"</string>
+    <string name="library_leaves_the_library_no_file_is_deleted_you_can_add_the_folder_again_later">"\"%1$s\" leaves the library. No file is deleted; you can add the folder again later."</string>
+    <string name="library_list_view">"List view"</string>
+    <string name="library_max_20_characters">"Max 20 characters"</string>
+    <string name="library_min">"%1$d min"</string>
+    <string name="library_most_played">"Most played"</string>
+    <string name="library_new_profile">"New profile"</string>
+    <string name="library_no_ds_cartridge_dumps_in_the_added_folders">"No DS cartridge dumps in the added folders."</string>
+    <string name="library_no_dsiware_titles_in_the_added_folders">"No DSiWARE titles in the added folders."</string>
+    <string name="library_no_favorites_yet_hold_a_game_or_press_y_to">"No favorites yet. Hold a game, or press Y, to add one."</string>
+    <string name="library_no_folders_added_yet">"No folders added yet."</string>
+    <string name="library_no_games_with_achievements_yet_a_game_joins_this_list_once_you_launch_it_an">"No games with achievements yet.\nA game joins this list once you launch it and RetroAchievements identifies it."</string>
+    <string name="library_no_roms_in_the_added_folders">"No ROMs in the added folders."</string>
+    <string name="library_open_rom">"Open ROM"</string>
+    <string name="library_options">"Options"</string>
+    <string name="library_platform_profile">"%1$s · profile %2$s"</string>
+    <string name="library_ra" translatable="false">"RA"</string>
+    <string name="library_ra_2">"RA: %1$s"</string>
+    <string name="library_recent">"Recent"</string>
+    <string name="library_remove">"Remove"</string>
+    <string name="library_remove_folder">"Remove folder"</string>
+    <string name="library_reserved_name">"Reserved name"</string>
+    <string name="library_rom_folders">"ROM folders"</string>
+    <string name="library_search">"Search"</string>
+    <string name="library_search_games">"Search games"</string>
+    <string name="library_start_a_new_game_from_the_beginning">"Start a new game from the beginning."</string>
+    <string name="library_start_game">"Start game"</string>
+    <string name="library_this_removes_its_settings_and_key_mappings_it">"This removes its settings and key mappings. It can\'t be undone."</string>
+    <string name="library_user_profile">"User profile"</string>
+    <string name="library_with_achievements">"With achievements"</string>
+    <string name="library_your_library_is_empty">"Your library is empty"</string>
+    <string name="mappinginfoscreen_a_cancel">"A, cancel"</string>
+    <string name="mappinginfoscreen_a_cancel_in_menus">"A, cancel in menus"</string>
+    <string name="mappinginfoscreen_b_confirm">"B, confirm"</string>
+    <string name="mappinginfoscreen_b_confirm_in_menus">"B, confirm in menus"</string>
+    <string name="mappinginfoscreen_button_assignment">"Button assignment"</string>
+    <string name="mappinginfoscreen_circle">"Circle"</string>
+    <string name="mappinginfoscreen_controller_mapping">"Controller mapping"</string>
+    <string name="mappinginfoscreen_d_pad">"D-Pad"</string>
+    <string name="mappinginfoscreen_d_pad_navigate_menus">"D-Pad, navigate menus"</string>
+    <string name="mappinginfoscreen_default_mapping_for_this_controller">"Default mapping for this controller"</string>
+    <string name="mappinginfoscreen_ds_function">"DS function"</string>
+    <string name="mappinginfoscreen_generic_controller">"Generic controller"</string>
+    <string name="mappinginfoscreen_l1" translatable="false">"L1"</string>
+    <string name="mappinginfoscreen_l2" translatable="false">"L2"</string>
+    <string name="mappinginfoscreen_l3" translatable="false">"L3"</string>
+    <string name="mappinginfoscreen_l_trigger">"L trigger"</string>
+    <string name="mappinginfoscreen_left_stick">"Left stick"</string>
+    <string name="mappinginfoscreen_menu">"Menu"</string>
+    <string name="mappinginfoscreen_moga_pocket" translatable="false">"MOGA Pocket"</string>
+    <string name="mappinginfoscreen_moga_pro" translatable="false">"MOGA Pro"</string>
+    <string name="mappinginfoscreen_nvidia_shield" translatable="false">"NVIDIA SHIELD"</string>
+    <string name="mappinginfoscreen_open_menu">"Open menu"</string>
+    <string name="mappinginfoscreen_physical_button">"Physical button"</string>
+    <string name="mappinginfoscreen_r1" translatable="false">"R1"</string>
+    <string name="mappinginfoscreen_r2" translatable="false">"R2"</string>
+    <string name="mappinginfoscreen_r3" translatable="false">"R3"</string>
+    <string name="mappinginfoscreen_r3_l1" translatable="false">"R3+L1"</string>
+    <string name="mappinginfoscreen_r3_r1" translatable="false">"R3+R1"</string>
+    <string name="mappinginfoscreen_r_trigger">"R trigger"</string>
+    <string name="mappinginfoscreen_read_only_known_controllers">"Read-only · known controllers"</string>
+    <string name="mappinginfoscreen_select_l" translatable="false">"Select+L"</string>
+    <string name="mappinginfoscreen_select_r" translatable="false">"Select+R"</string>
+    <string name="mappinginfoscreen_select_x" translatable="false">"Select+X"</string>
+    <string name="mappinginfoscreen_select_y" translatable="false">"Select+Y"</string>
+    <string name="mappinginfoscreen_square">"Square"</string>
+    <string name="mappinginfoscreen_touch_pointer">"Touch pointer"</string>
+    <string name="mappinginfoscreen_triangle">"Triangle"</string>
+    <string name="mappinginfoscreen_xperia_play" translatable="false">"Xperia Play"</string>
+    <string name="menu_1_2" translatable="false">"1·2"</string>
+    <string name="menu_1x" translatable="false">"1x"</string>
+    <string name="menu_change_layout">"Change layout"</string>
+    <string name="menu_close_lid">"Close lid"</string>
+    <string name="menu_edit_controls">"Edit controls"</string>
+    <string name="menu_exit">"Exit"</string>
+    <string name="menu_exit_the_game">"Exit the game?"</string>
+    <string name="menu_external_screen">"External screen"</string>
+    <string name="menu_external_screen_2">"EXTERNAL\nSCREEN"</string>
+    <string name="menu_ff" translatable="false">"FF"</string>
+    <string name="menu_global">"(global)"</string>
+    <string name="menu_global_2">"GLOBAL"</string>
+    <string name="menu_global_settings">" · GLOBAL SETTINGS"</string>
+    <string name="menu_hide">"Hide"</string>
+    <string name="menu_hide_controls">"Hide controls"</string>
+    <string name="menu_mic" translatable="false">"MIC"</string>
+    <string name="menu_move_toolbar">"Move toolbar"</string>
+    <string name="menu_open_lid">"Open lid"</string>
+    <string name="menu_paused">"PAUSED"</string>
+    <string name="menu_per_game_settings">" · PER-GAME SETTINGS"</string>
+    <string name="menu_ql" translatable="false">"QL"</string>
+    <string name="menu_qs" translatable="false">"QS"</string>
+    <string name="menu_reset_the_game">"Reset the game?"</string>
+    <string name="menu_resume">"Resume"</string>
+    <string name="menu_show">"Show"</string>
+    <string name="menu_show_controls">"Show controls"</string>
+    <string name="menu_tb" translatable="false">"TB"</string>
+    <string name="menu_the_emulator_will_close_and_unsaved_progress">"The emulator will close and unsaved progress will be lost."</string>
+    <string name="menu_unsaved_progress_will_be_lost">"Unsaved progress will be lost."</string>
+    <string name="menu_x" translatable="false">"%1$dx"</string>
+    <string name="menu_x_x" translatable="false">"%1$dx/%2$dx"</string>
+    <string name="number_value" translatable="false">"%1$d"</string>
+    <string name="percent_unit" translatable="false">"%"</string>
+    <string name="performance_percentage_format" translatable="false" formatted="false">"%05.1f%%/%05.1f%%"</string>
+    <string name="platform_nds" translatable="false">"NDS"</string>
+    <string name="presets_both_screens_take_the_size_of_the_smaller_panel_so_they_line_up_exactly_fil">"Both screens take the size of the smaller panel, so they line up exactly. Fill area is ignored."</string>
+    <string name="presets_bottom_here_top_on_tv">"Bottom here · top on TV"</string>
+    <string name="presets_bottom_screen_on_the_device_top_screen_on_the">"Bottom screen on the device, top screen on the external display."</string>
+    <string name="presets_centre">"Centre"</string>
+    <string name="presets_disabled">"DISABLED"</string>
+    <string name="presets_disabled_manual_layout">"Disabled (manual layout)"</string>
+    <string name="presets_fill_area">"Fill area"</string>
+    <string name="presets_filling_needs_keep_ratio_or_integer_scale_on">"Filling needs keep-ratio or integer scale on"</string>
+    <string name="presets_let_each_screen_span_its_panel_even_where_the">"Let each screen span its panel even where the ratio would leave a border."</string>
+    <string name="presets_panel_sizes_from_the_profile">" Panel sizes from the %1$s profile."</string>
+    <string name="presets_presets_disabled_the_layout_settings_apply_as">"Presets disabled · the layout settings apply as they are"</string>
+    <string name="presets_same_screen_size">"Same screen size"</string>
+    <string name="presets_the_screen_settings_apply_exactly_as">"The screen settings apply exactly as configured."</string>
+    <string name="presets_top_here_bottom_on_tv">"Top here · bottom on TV"</string>
+    <string name="presets_top_screen_on_the_device_bottom_screen_on_the">"Top screen on the device, bottom screen on the external display."</string>
+    <string name="presets_where_the_space_left_over_goes_on_each_panel">"Where the space left over goes on each panel."</string>
+    <string name="profile_default">"Default"</string>
+    <string name="progress_percentage" translatable="false">"%1$d%%"</string>
+    <string name="ra_active_challenges">"Active challenges"</string>
+    <string name="ra_almost_there">"Almost there"</string>
+    <string name="ra_couldn_t_open_the_rom_for_retroachievements">"Couldn\'t open the ROM for RetroAchievements"</string>
+    <string name="ra_game_complete">"Game complete"</string>
+    <string name="ra_game_completed">"Game completed!"</string>
+    <string name="ra_game_has_no_achievements_in_ra">"Game has no achievements in RA"</string>
+    <string name="ra_inactive">"Inactive"</string>
+    <string name="ra_leaderboard_attempt_failed">"Leaderboard attempt failed"</string>
+    <string name="ra_locked">"Locked"</string>
+    <string name="ra_no_achievements_for_this_game">"No achievements for this game"</string>
+    <string name="ra_ra_offline_unlocks_queued">"RA: offline (unlocks queued)"</string>
+    <string name="ra_ra_reconnected">"RA: reconnected"</string>
+    <string name="ra_recently_unlocked">"Recently unlocked"</string>
+    <string name="ra_resuming_session">"Resuming session…"</string>
+    <string name="ra_server_error">"server error"</string>
+    <string name="ra_sign_in_failed">"Sign-in failed"</string>
+    <string name="ra_signed_in_as">"Signed in as %1$s"</string>
+    <string name="ra_signing_in">"Signing in…"</string>
+    <string name="ra_subset_complete">"Subset complete"</string>
+    <string name="ra_unlocked">"Unlocked"</string>
+    <string name="ra_unofficial">"Unofficial"</string>
+    <string name="ra_unsupported">"Unsupported"</string>
+    <string name="ra_unsynced">"Unsynced"</string>
+    <string name="settings_0_5x" translatable="false">"0.5x"</string>
+    <string name="settings_10x" translatable="false">"10x"</string>
+    <string name="settings_12x" translatable="false">"12x"</string>
+    <string name="settings_16_bit_render">"16-bit render"</string>
+    <string name="settings_16x" translatable="false">"16x"</string>
+    <string name="settings_1_5x" translatable="false">"1.5x"</string>
+    <string name="settings_1x_native">"1x (native)"</string>
+    <string name="settings_20x" translatable="false">"20x"</string>
+    <string name="settings_2x" translatable="false">"2x"</string>
+    <string name="settings_3d_render">"3D render"</string>
+    <string name="settings_3x" translatable="false">"3x"</string>
+    <string name="settings_4x" translatable="false">"4x"</string>
+    <string name="settings_5x" translatable="false">"5x"</string>
+    <string name="settings_6x" translatable="false">"6x"</string>
+    <string name="settings_8x" translatable="false">"8x"</string>
+    <string name="settings_a_touch_button_also_registers_a_tap_on_the_ds">"A touch button also registers a tap on the DS screen (touch-through)."</string>
+    <string name="settings_accessory_in_the_gba_slot_rumble_pak_etc">"Accessory in the GBA slot (Rumble Pak, etc.)."</string>
+    <string name="settings_account">"Account"</string>
+    <string name="settings_advanced">"Advanced"</string>
+    <string name="settings_aligns_controls_automatically_when_moving_them">"Aligns controls automatically when moving them."</string>
+    <string name="settings_allows_roms_that_exceed_the_standard">"Allows ROMs that exceed the standard cartridge size."</string>
+    <string name="settings_alternate_layout_for_the_special_button_swap">"Alternate layout for the Special button \"Swap 1·2\"."</string>
+    <string name="settings_analog_triggers">"Analog triggers"</string>
+    <string name="settings_app_storage">"App storage"</string>
+    <string name="settings_appearance">"Appearance"</string>
+    <string name="settings_april">"April"</string>
+    <string name="settings_asks_for_confirmation_before_loading_a">"Asks for confirmation before loading a savestate."</string>
+    <string name="settings_asks_for_confirmation_before_overwriting_a">"Asks for confirmation before overwriting a savestate."</string>
+    <string name="settings_assign_each_ds_button_to_your_physical">"Assign each DS button to your physical controller."</string>
+    <string name="settings_audio">"Audio"</string>
+    <string name="settings_audio_latency">"Audio latency"</string>
+    <string name="settings_august">"August"</string>
+    <string name="settings_auto_snap_in_control_editor">"Auto-snap in control editor"</string>
+    <string name="settings_autoload_last_game">"Autoload last game"</string>
+    <string name="settings_automatic">"Automatic"</string>
+    <string name="settings_autosave">"Autosave"</string>
+    <string name="settings_autosave_autoload_confirmations">"Autosave, autoload, confirmations"</string>
+    <string name="settings_avoids_skipping_frames_that_would_cause">"Avoids skipping frames that would cause visual glitches."</string>
+    <string name="settings_behavior">"Behavior"</string>
+    <string name="settings_birthday">"Birthday"</string>
+    <string name="settings_blends_frames_to_smooth_the_flicker_of_some">"Blends frames to smooth the flicker of some effects."</string>
+    <string name="settings_bottom_only">"Bottom only"</string>
+    <string name="settings_box_art">"Box art"</string>
+    <string name="settings_brown">"Brown"</string>
+    <string name="settings_button_mapping_rumble_sticks_triggers">"Button mapping, rumble, sticks, triggers"</string>
+    <string name="settings_button_touch_zone">"Button touch zone"</string>
+    <string name="settings_casual">"%1$s casual"</string>
+    <string name="settings_cerulean">"Cerulean"</string>
+    <string name="settings_changes_here_apply_only_to">"Changes here apply only to %1$s."</string>
+    <string name="settings_cheats_and_scripting">"Cheats and scripting"</string>
+    <string name="settings_check_the_default_mapping_for_known">"Check the default mapping for known controllers."</string>
+    <string name="settings_clear_box_art_cache">"Clear box art cache"</string>
+    <string name="settings_clear_the_box_art_cache">"Clear the box art cache?"</string>
+    <string name="settings_clone_device">"Clone device"</string>
+    <string name="settings_confirm_state_load">"Confirm state load"</string>
+    <string name="settings_confirm_state_overwrite">"Confirm state overwrite"</string>
+    <string name="settings_confirmations">"Confirmations"</string>
+    <string name="settings_control_opacity">"Control opacity"</string>
+    <string name="settings_controller">"Controller"</string>
+    <string name="settings_covers_will_be_downloaded_again_the_next_time">"Covers will be downloaded again the next time you browse the library."</string>
+    <string name="settings_creates_an_automatic_savestate_periodically">"Creates an automatic savestate periodically or on pause."</string>
+    <string name="settings_currently">"Currently %1$s."</string>
+    <string name="settings_custom_date_time">"Custom date &amp; time"</string>
+    <string name="settings_custom_ds_clock">"Custom DS clock"</string>
+    <string name="settings_custom_folder">"Custom folder"</string>
+    <string name="settings_d_pad_touch_zone">"D-pad touch zone"</string>
+    <string name="settings_dark">"Dark"</string>
+    <string name="settings_debug">"Activity details"</string>
+    <string name="settings_december">"December"</string>
+    <string name="settings_decrease">"Decrease"</string>
+    <string name="settings_deep_lavender">"Deep Lavender"</string>
+    <string name="settings_defaults_for_every_game_that_has_no_settings">"Defaults for every game that has no settings of its own."</string>
+    <string name="settings_diagnostic_log">"Diagnostic log"</string>
+    <string name="settings_diagnostics">"Diagnostics"</string>
+    <string name="settings_disable_back_button">"Disable Back button"</string>
+    <string name="settings_disable_edge_marking">"Disable edge-marking"</string>
+    <string name="settings_download_box_art">"Download box art"</string>
+    <string name="settings_drops_the_3d_resolution_one_step_when_the_game_falls_behind_and_raises_it_b">"Drops the 3D resolution one step when the game falls behind and raises it back when it catches up. Needs an internal resolution above 2x."</string>
+    <string name="settings_ds_firmware">"DS firmware"</string>
+    <string name="settings_ds_system">"DS system"</string>
+    <string name="settings_dualscreen_presets_config">"DualScreen Presets Config"</string>
+    <string name="settings_dynamic_3d_resolution">"Dynamic 3D resolution"</string>
+    <string name="settings_enable_cheats">"Enable cheats"</string>
+    <string name="settings_enable_lua_scripts">"Enable Lua scripts"</string>
+    <string name="settings_enable_retroachievements">"Enable RetroAchievements"</string>
+    <string name="settings_enables_cheat_codes_action_replay">"Enables cheat codes (Action Replay)."</string>
+    <string name="settings_enables_or_mutes_all_audio">"Enables or mutes all audio."</string>
+    <string name="settings_enables_running_lua_scripts">"Enables running Lua scripts."</string>
+    <string name="settings_encore_mode">"Encore mode"</string>
+    <string name="settings_enlarges_the_d_pad_s_sensitive_area_without">"Enlarges the D-pad\'s sensitive area without changing its visual size."</string>
+    <string name="settings_enlarges_the_sensitive_area_of_the_face">"Enlarges the sensitive area of the face buttons."</string>
+    <string name="settings_every_15_min">"Every 15 min"</string>
+    <string name="settings_every_30_min">"Every 30 min"</string>
+    <string name="settings_every_5_min">"Every 5 min"</string>
+    <string name="settings_external_display_border">"External display border"</string>
+    <string name="settings_external_screen_mode">"External screen mode"</string>
+    <string name="settings_fast_forward_as_toggle">"Fast-Forward as toggle"</string>
+    <string name="settings_fast_forward_indicator">"Fast-Forward indicator"</string>
+    <string name="settings_favorite_color">"Favorite color"</string>
+    <string name="settings_february">"February"</string>
+    <string name="settings_fetches_covers_from_the_libretro_thumbnail">"Fetches covers from the libretro thumbnail server, matched by the ROM\'s No-Intro file name. Each cover is downloaded once and then kept on this device."</string>
+    <string name="settings_firmware_birthday_some_games_use_it_month_and">"Firmware birthday (some games use it). Month and day."</string>
+    <string name="settings_firmware_language_some_games_read_it">"Firmware language (some games read it)."</string>
+    <string name="settings_firmware_nickname_language_color_rtc">"Firmware: nickname, language, color, RTC"</string>
+    <string name="settings_forces_the_game_s_main_screen_to_always_be">"Forces the game\'s main screen to always be the top one."</string>
+    <string name="settings_fps_mode">"FPS mode"</string>
+    <string name="settings_fps_with_transparent_background">"FPS with transparent background"</string>
+    <string name="settings_framerate_stabilizer">"Framerate stabilizer"</string>
+    <string name="settings_frames">"frames"</string>
+    <string name="settings_frames_to_hold_back_the_built_in_screen_so_it_lines_up_with_a_tv_monitor_th">"Frames to hold back the built-in screen so it lines up with a TV/monitor that shows the external screen late. 0 = off. The built-in screen shows the frame from N frames ago, so both screens stay fluid. Try 1 and 2 while watching something that crosses both screens."</string>
+    <string name="settings_frameskip">"Frameskip"</string>
+    <string name="settings_frameskip_fast_forward_3d_render_fps">"Frameskip, fast-forward, 3D render, FPS"</string>
+    <string name="settings_frameskip_value">"Frameskip value"</string>
+    <string name="settings_fullscreen">"Fullscreen"</string>
+    <string name="settings_function_of_the_1st_extra_on_screen_button">"Function of the 1st extra on-screen button."</string>
+    <string name="settings_function_of_the_2nd_extra_on_screen_button">"Function of the 2nd extra on-screen button."</string>
+    <string name="settings_function_of_the_3rd_extra_on_screen_button">"Function of the 3rd extra on-screen button."</string>
+    <string name="settings_function_of_the_right_analog_stick">"Function of the right analog stick."</string>
+    <string name="settings_fxaa" translatable="false">"FXAA"</string>
+    <string name="settings_fxaa_hq" translatable="false">"FXAA HQ"</string>
+    <string name="settings_gba_cartridge">"GBA Cartridge"</string>
+    <string name="settings_global">"Global"</string>
+    <string name="settings_global_settings">"GLOBAL SETTINGS"</string>
+    <string name="settings_got_it">"Got it"</string>
+    <string name="settings_hardcore">"%1$s hardcore"</string>
+    <string name="settings_hardware">"Hardware"</string>
+    <string name="settings_hidden">"Hidden"</string>
+    <string name="settings_hide_already_mapped_buttons">"Hide already-mapped buttons"</string>
+    <string name="settings_hide_when_a_gamepad_is_connected">"Hide when a gamepad is connected"</string>
+    <string name="settings_hides_the_on_screen_buttons_when_a_controller">"Hides the on-screen buttons when a controller (or built-in handheld buttons) is detected. You can still show them from the pause menu."</string>
+    <string name="settings_high">"High"</string>
+    <string name="settings_how_many_frames_to_skip_manual_mode_only">"How many frames to skip (Manual mode only)."</string>
+    <string name="settings_how_the_ds_s_two_screens_are_arranged">"How the DS\'s two screens are arranged."</string>
+    <string name="settings_hq2x" translatable="false">"HQ2X"</string>
+    <string name="settings_identifies_the_game_and_tracks_your">"Identifies the game and tracks your achievements (Casual mode)."</string>
+    <string name="settings_ignore_gamecard_limit">"Ignore gamecard limit"</string>
+    <string name="settings_ignores_the_system_back_button_during_the_game">"Ignores the system Back button during the game."</string>
+    <string name="settings_image_filter">"Image filter"</string>
+    <string name="settings_image_smoothing_scaling_shader">"Image smoothing/scaling (shader)."</string>
+    <string name="settings_include_game_save_in_state">"Include game save in state"</string>
+    <string name="settings_includes_in_development_unverified_achievements">"Includes in-development / unverified achievements."</string>
+    <string name="settings_increase">"Increase"</string>
+    <string name="settings_install_ds_bios_export_data">"Install DS BIOS, export data."</string>
+    <string name="settings_interframe_blending">"Interframe blending"</string>
+    <string name="settings_internal">"Internal"</string>
+    <string name="settings_internal_3d_resolution">"Internal 3D resolution"</string>
+    <string name="settings_internal_screen_delay">"Internal screen delay"</string>
+    <string name="settings_january">"January"</string>
+    <string name="settings_july">"July"</string>
+    <string name="settings_june">"June"</string>
+    <string name="settings_keep_main_screen_on_top">"Keep main screen on top"</string>
+    <string name="settings_keeps_the_cpu_at_high_frequency_0_off">"Keeps the CPU at high frequency (0 = off). Increases battery drain."</string>
+    <string name="settings_khaki">"Khaki"</string>
+    <string name="settings_landscape">"Landscape"</string>
+    <string name="settings_landscape_1_1">"Landscape 1:1"</string>
+    <string name="settings_landscape_flipped">"Landscape (flipped)"</string>
+    <string name="settings_landscape_x_1">"Landscape x:1"</string>
+    <string name="settings_lavender">"Lavender"</string>
+    <string name="settings_layout">"Layout"</string>
+    <string name="settings_layout_filter_rotation_external_display">"Layout, filter, rotation, external display"</string>
+    <string name="settings_lcd1x" translatable="false">"lcd1x"</string>
+    <string name="settings_lcd1x_nds_color" translatable="false">"lcd1x+nds_color"</string>
+    <string name="settings_let_this_screen_span_the_device_s_width_even">"Let this screen span the device\'s width even if the ratio says otherwise."</string>
+    <string name="settings_let_this_screen_span_the_external_display_s">"Let this screen span the external display\'s width."</string>
+    <string name="settings_lets_you_re_unlock_achievements_you_already">"Lets you re-unlock achievements you already have."</string>
+    <string name="settings_light">"Light"</string>
+    <string name="settings_linear">"Linear"</string>
+    <string name="settings_loads_the_entire_rom_into_memory_faster_uses">"Loads the entire ROM into memory: faster, uses more RAM."</string>
+    <string name="settings_local_multiplayer_status">"Local multiplayer status."</string>
+    <string name="settings_location">"Location"</string>
+    <string name="settings_locked_while_a_game_is_running_close_the_game_to_change_it">"Locked while a game is running: close the game to change it."</string>
+    <string name="settings_login_achievements_notifications_encore">"Login, achievements, notifications, encore"</string>
+    <string name="settings_look_of_the_touch_buttons">"Look of the touch buttons."</string>
+    <string name="settings_low">"Low"</string>
+    <string name="settings_low_resolution_ui_textures">"Low-resolution UI textures"</string>
+    <string name="settings_lower_more_responsive_higher_fewer_dropouts">"Lower = more responsive; higher = fewer dropouts."</string>
+    <string name="settings_mahogany">"Mahogany"</string>
+    <string name="settings_mantis">"Mantis"</string>
+    <string name="settings_manual">"Manual"</string>
+    <string name="settings_map_gamepad_buttons">"Map gamepad buttons"</string>
+    <string name="settings_mapping">"Mapping"</string>
+    <string name="settings_march">"March"</string>
+    <string name="settings_margin_around_the_image_on_the_external">"Margin around the image on the external display."</string>
+    <string name="settings_max_fast_forward_speed">"Max Fast-Forward speed"</string>
+    <string name="settings_may">"May"</string>
+    <string name="settings_medium">"Medium"</string>
+    <string name="settings_menu_button_position">"Menu button position"</string>
+    <string name="settings_microphone">"Microphone"</string>
+    <string name="settings_microphone_capture_sensitivity">"Microphone capture sensitivity."</string>
+    <string name="settings_microphone_level">"Microphone level"</string>
+    <string name="settings_moonstone">"Moonstone"</string>
+    <string name="settings_motion_pack_homebrew">"Motion Pack (Homebrew)"</string>
+    <string name="settings_motion_pack_official">"Motion Pack (Official)"</string>
+    <string name="settings_mulberry">"Mulberry"</string>
+    <string name="settings_multi_threaded_3d_render">"Multi-threaded 3D render"</string>
+    <string name="settings_multiplayer_wifi">"Multiplayer / WiFi"</string>
+    <string name="settings_next_to_the_rom">"Next to the ROM"</string>
+    <string name="settings_nickname">"Nickname"</string>
+    <string name="settings_no_d_pad_diagonals">"No D-pad diagonals"</string>
+    <string name="settings_not_chosen">"Not chosen"</string>
+    <string name="settings_not_set">"Not set"</string>
+    <string name="settings_notification_on_unlock">"Notification on unlock"</string>
+    <string name="settings_november">"November"</string>
+    <string name="settings_october">"October"</string>
+    <string name="settings_off">"Off"</string>
+    <string name="settings_off_while_dynamic_3d_resolution_is_on_the_two_never_run_together">"Off while Dynamic 3D resolution is on: the two never run together."</string>
+    <string name="settings_off_while_frameskip_is_on_the_two_never_run_together">"Off while Frameskip is on: the two never run together."</string>
+    <string name="settings_on_pause_suspend">"On pause/suspend"</string>
+    <string name="settings_on_screen">"On-screen"</string>
+    <string name="settings_on_screen_controls">"On-screen controls"</string>
+    <string name="settings_orientation_of_the_device_screen">"Orientation of the device screen."</string>
+    <string name="settings_outline">"Outline"</string>
+    <string name="settings_overall_emulator_volume">"Overall emulator volume."</string>
+    <string name="settings_overlay">"Overlay"</string>
+    <string name="settings_overlays_your_current_retroachievements_rich">"Overlays your current RetroAchievements Rich Presence text on top of the game (what RA reports as your activity)."</string>
+    <string name="settings_pad_style">"Pad style"</string>
+    <string name="settings_password">"Password"</string>
+    <string name="settings_per_game_settings">"PER-GAME SETTINGS"</string>
+    <string name="settings_performance">"Performance"</string>
+    <string name="settings_performance_cheats_bios_data">"Performance, cheats, BIOS, data"</string>
+    <string name="settings_persian_orange">"Persian Orange"</string>
+    <string name="settings_physical_controller">"Physical controller"</string>
+    <string name="settings_plays_a_sound_when_you_earn_an_achievement">"Plays a sound when you earn an achievement."</string>
+    <string name="settings_pointer_mode">"Pointer mode"</string>
+    <string name="settings_portrait">"Portrait"</string>
+    <string name="settings_portrait_flipped">"Portrait (flipped)"</string>
+    <string name="settings_preload_rom_to_ram">"Preload ROM to RAM"</string>
+    <string name="settings_presses_touch_the_screen">"Presses touch the screen"</string>
+    <string name="settings_puts_the_bottom_screen_on_top_and_vice_versa">"Puts the bottom screen on top and vice versa."</string>
+    <string name="settings_quilez" translatable="false">"Quilez"</string>
+    <string name="settings_rapid_fire_speed">"Rapid-fire speed"</string>
+    <string name="settings_rate_of_the_turbo_rapid_fire">"Rate of the turbo / rapid-fire."</string>
+    <string name="settings_raw_sav_format">"Raw .sav format"</string>
+    <string name="settings_reduces_the_memory_the_interface_uses">"Reduces the memory the interface uses."</string>
+    <string name="settings_removes_from_the_touch_pad_the_buttons_you">"Removes from the touch pad the buttons you already assigned to your physical controller."</string>
+    <string name="settings_removes_the_black_outline_the_ds_draws_around">"Removes the black outline the DS draws around polygons."</string>
+    <string name="settings_removes_the_dark_background_of_the_fps_counter">"Removes the dark background of the FPS counter."</string>
+    <string name="settings_renders_3d_above_native_sharper_but_heavier_applies_when_you_open_the_next">"Renders 3D above native: sharper, but heavier. Applies when you open the next game."</string>
+    <string name="settings_reset_to_global_settings">"Reset to global settings?"</string>
+    <string name="settings_reset_to_global_settings_2">"Reset to global settings"</string>
+    <string name="settings_retroachievements_username">"RetroAchievements username"</string>
+    <string name="settings_right_stick_mode">"Right stick mode"</string>
+    <string name="settings_rom_auto_trim">"ROM auto-trim"</string>
+    <string name="settings_roms_and_data">"ROMs and data"</string>
+    <string name="settings_rotation">"Rotation"</string>
+    <string name="settings_rumble_and_sticks">"Rumble and sticks"</string>
+    <string name="settings_rumble_device">"Rumble device"</string>
+    <string name="settings_rumble_pak">"Rumble Pak"</string>
+    <string name="settings_safe_frameskip">"Safe frameskip"</string>
+    <string name="settings_same_folder_as_each_rom">"Same folder as each ROM"</string>
+    <string name="settings_same_vertically">"Same, vertically."</string>
+    <string name="settings_save_compatibility">"Save compatibility"</string>
+    <string name="settings_save_files">"Save files"</string>
+    <string name="settings_saves_and_states">"Saves and states"</string>
+    <string name="settings_saves_battery_by_yielding_cpu_on_the_graphics">"Saves battery by yielding CPU on the graphics thread."</string>
+    <string name="settings_saves_the_game_s_save_sav_inside_the_savestate">"Saves the game\'s save (.sav) inside the savestate."</string>
+    <string name="settings_saves_the_sav_without_a_header_for">"Saves the .sav without a header, for compatibility with other emulators."</string>
+    <string name="settings_scale2x" translatable="false">"Scale2X"</string>
+    <string name="settings_scales_both_screens_by_a_whole_number_so_a_ds">"Scales both screens by a whole number, so a DS pixel is always the same size. Costs some border and gives back an exact picture."</string>
+    <string name="settings_scaling_fill_area_and_vertical_alignment_for">"Scaling, fill area and vertical alignment for both screens."</string>
+    <string name="settings_scanline">"Scanline"</string>
+    <string name="settings_screen_layout">"Screen layout"</string>
+    <string name="settings_screen_on_external_display">"Screen on external display"</string>
+    <string name="settings_screens">"Screens"</string>
+    <string name="settings_sea_green">"Sea Green"</string>
+    <string name="settings_second_layout">"Second layout"</string>
+    <string name="settings_september">"September"</string>
+    <string name="settings_settings_global">"Settings · global"</string>
+    <string name="settings_settings_per_game">"Settings · per game"</string>
+    <string name="settings_settings_per_game_2">"Settings · per game · "</string>
+    <string name="settings_sharp_bilinear" translatable="false">"sharp_bilinear"</string>
+    <string name="settings_sharp_bilinear_nds_color" translatable="false">"sharp_bilinear+nds_color"</string>
+    <string name="settings_show_3d_resolution">"Show 3D resolution"</string>
+    <string name="settings_show_fps">"Show FPS"</string>
+    <string name="settings_show_hide_buttons">"Show/Hide buttons"</string>
+    <string name="settings_show_only_one_of_the_ds_screens_touch_works">"Show only one of the DS screens (touch works when it\'s the bottom one)."</string>
+    <string name="settings_show_rich_presence_on_screen">"Show Rich presence on screen"</string>
+    <string name="settings_show_start_select">"Show Start / Select"</string>
+    <string name="settings_shows_an_alert_when_you_earn_an_achievement">"Shows an alert when you earn an achievement."</string>
+    <string name="settings_shows_an_icon_when_the_game_is_sped_up">"Shows an icon when the game is sped up."</string>
+    <string name="settings_shows_the_3d_resolution_in_use_and_the_configured_one_next_to_the_fps_count">"Shows the 3D resolution in use and the configured one, next to the FPS counter."</string>
+    <string name="settings_shows_the_speed_counter_on_screen">"Shows the speed counter on screen."</string>
+    <string name="settings_shows_the_start_and_select_buttons_on_screen">"Shows the Start and Select buttons on screen."</string>
+    <string name="settings_sign_in">"Sign in"</string>
+    <string name="settings_sign_out">"Sign out"</string>
+    <string name="settings_single_screen">"Single screen"</string>
+    <string name="settings_skips_frames_to_keep_up_to_speed_manual_uses">"Skips frames to keep up to speed. Manual uses the value below; Automatic adjusts it on its own."</string>
+    <string name="settings_slate_gray">"Slate Gray"</string>
+    <string name="settings_sleep_on_render_thread">"Sleep on render thread"</string>
+    <string name="settings_slot_2_cartridge">"Slot-2 cartridge"</string>
+    <string name="settings_smaa" translatable="false">"SMAA"</string>
+    <string name="settings_some_settings_are_hidden_the_preset_owns_them">"Some settings are hidden: the preset owns them."</string>
+    <string name="settings_sound">"Sound"</string>
+    <string name="settings_sound_enabled">"Sound enabled"</string>
+    <string name="settings_sound_on_unlock">"Sound on unlock"</string>
+    <string name="settings_special_button_i">"Special button I"</string>
+    <string name="settings_special_button_ii">"Special button II"</string>
+    <string name="settings_special_button_iii">"Special button III"</string>
+    <string name="settings_special_buttons">"Special buttons"</string>
+    <string name="settings_spectator_mode">"Spectator mode"</string>
+    <string name="settings_speed_1_fast">"Speed 1 (fast)"</string>
+    <string name="settings_speed_2">"Speed 2"</string>
+    <string name="settings_speed_3">"Speed 3"</string>
+    <string name="settings_speed_4">"Speed 4"</string>
+    <string name="settings_speed_5_slow">"Speed 5 (slow)"</string>
+    <string name="settings_speed_cap_when_speeding_up_the_game">"Speed cap when speeding up the game."</string>
+    <string name="settings_spreads_3d_rasterizing_across_several_cores">"Spreads 3D rasterizing across several cores. Faster in dense scenes."</string>
+    <string name="settings_sram_cartridge">"SRAM Cartridge"</string>
+    <string name="settings_stick_deadzone">"Stick deadzone"</string>
+    <string name="settings_stick_mode">"Stick mode"</string>
+    <string name="settings_system">"System"</string>
+    <string name="settings_system_language">"System language"</string>
+    <string name="settings_the_d_pad_registers_only_4_directions_no">"The D-pad registers only 4 directions, no diagonals."</string>
+    <string name="settings_the_ds_clock_uses_the_device_s_real_time">"The DS clock uses the device\'s real time."</string>
+    <string name="settings_the_ds_firmware_theme_color">"The DS firmware theme color."</string>
+    <string name="settings_the_emulator_does_not_support_local">"The emulator does not support local multiplayer or the DS WiFi connection."</string>
+    <string name="settings_the_fixed_date_and_time_the_ds_clock_will_use">"The fixed date and time the DS clock will use."</string>
+    <string name="settings_the_user_s_name_in_the_ds_firmware">"The user\'s name in the DS firmware."</string>
+    <string name="settings_this_discards_this_game_s_own_settings_and">"This discards this game\'s own settings and goes back to the global ones."</string>
+    <string name="settings_this_game">"this game"</string>
+    <string name="settings_threshold_before_the_stick_registers_movement">"Threshold before the stick registers movement."</string>
+    <string name="settings_toolbox">"Toolbox"</string>
+    <string name="settings_top_only">"Top only"</string>
+    <string name="settings_tracks_achievements_without_sending_unlocks">"Tracks achievements without sending unlocks to the server."</string>
+    <string name="settings_transparency_of_the_buttons_at_0_they_re">"Transparency of the buttons. At 0 they\'re invisible but still work."</string>
+    <string name="settings_trims_the_rom_s_padding_to_save_space">"Trims the ROM\'s padding to save space."</string>
+    <string name="settings_tufts_blue">"Tufts Blue"</string>
+    <string name="settings_turns_on_off_with_a_tap_instead_of_holding">"Turns on/off with a tap instead of holding."</string>
+    <string name="settings_unlimited">"Unlimited"</string>
+    <string name="settings_unofficial_achievements">"Unofficial achievements"</string>
+    <string name="settings_unzip_zip_to_file">"Unzip ZIP to file"</string>
+    <string name="settings_unzips_to_a_temporary_file_instead_of_to_ram">"Unzips to a temporary file instead of to RAM."</string>
+    <string name="settings_use_device_microphone">"Use device microphone"</string>
+    <string name="settings_use_system_time_rtc">"Use system time (RTC)"</string>
+    <string name="settings_uses_16_bit_color_in_3d_less_memory_slightly">"Uses 16-bit color in 3D: less memory, slightly less accurate."</string>
+    <string name="settings_uses_a_fixed_date_time_instead_of_the_system_s">"Uses a fixed date/time instead of the system\'s."</string>
+    <string name="settings_uses_the_controller_s_l2_r2_triggers_as_the_ds_s_l_r">"Uses the controller\'s L2/R2 triggers as the DS\'s L/R."</string>
+    <string name="settings_uses_the_real_microphone_for_games_that">"Uses the real microphone for games that require it."</string>
+    <string name="settings_vertical">"Vertical"</string>
+    <string name="settings_very_high">"Very High"</string>
+    <string name="settings_vibrate_on_press">"Vibrate on press"</string>
+    <string name="settings_vibrates_when_touching_the_touch_buttons">"Vibrates when touching the touch buttons."</string>
+    <string name="settings_video">"Video"</string>
+    <string name="settings_view_controller_mapping">"View controller mapping"</string>
+    <string name="settings_viridian">"Viridian"</string>
+    <string name="settings_virtual_pad_opacity_special_buttons">"Virtual pad, opacity, Special buttons"</string>
+    <string name="settings_volume">"Volume"</string>
+    <string name="settings_volume_latency_microphone">"Volume, latency, microphone"</string>
+    <string name="settings_what_to_do_with_a_connected_external_monitor_tv">"What to do with a connected external monitor/TV."</string>
+    <string name="settings_when_opening_a_game_automatically_loads_the">"When opening a game, automatically loads the last saved state."</string>
+    <string name="settings_where_game_saves_and_savestates_are_kept_next_to_the_rom_makes_them_visible">"Where game saves and savestates are kept. Next to the ROM makes them visible to file managers and other emulators; the ones already in the app are copied over the first time they are needed."</string>
+    <string name="settings_where_the_leftover_space_goes_on_the_device">"Where the leftover space goes on the device."</string>
+    <string name="settings_where_the_leftover_space_goes_on_the_external">"Where the leftover space goes on the external display."</string>
+    <string name="settings_where_to_place_the_button_that_opens_the_game">"Where to place the ☰ button that opens the game menu."</string>
+    <string name="settings_which_ds_screen_stays_on_the_device_and_which">"Which DS screen stays on the device and which goes to the external display."</string>
+    <string name="settings_which_ds_screen_to_send_to_the_external">"Which DS screen to send to the external display. If it\'s the bottom one, touch works from that display."</string>
+    <string name="settings_which_motor_to_use_for_rumble">"Which motor to use for rumble."</string>
+    <string name="settings_wood">"Wood"</string>
+    <string name="settings_writes_seedlessds_log_in_your_first_rom_folder_device_library_screens_game">"Writes SeedlessDS.log in your first ROM folder: device, library, screens, game start and errors. Turn it on only when asked for a report; the file rotates at 4 MB."</string>
+    <string name="settings_x" translatable="false">"x"</string>
+    <string name="settings_your_password_is_not_saved_only_an_encrypted">"Your password is not saved; only an encrypted token is stored."</string>
+    <string name="settings_zfast_lcd" translatable="false">"zfast_lcd"</string>
+    <string name="settings_zfast_lcd_nds_color" translatable="false">"zfast_lcd+nds_color"</string>
+    <string name="slider_value_unit" translatable="false">"%1$d%2$s"</string>
+    <string name="sort_ascending_suffix" translatable="false">" ↑"</string>
+    <string name="sort_descending_suffix" translatable="false">" ↓"</string>
+    <string name="state_could_not_save_to">"Could not save to %1$s"</string>
+    <string name="state_date_size">"%1$s  ·  %2$d KB"</string>
+    <string name="state_dd_mm_yyyy_hh_mm">"dd/MM/yyyy HH:mm"</string>
+    <string name="state_deleted">"Deleted %1$s"</string>
+    <string name="state_empty_or_corrupt_slot">"Empty or corrupt slot: %1$s"</string>
+    <string name="state_empty_press_to_save">"EMPTY · PRESS TO SAVE"</string>
+    <string name="state_kb" translatable="false">"%1$d KB"</string>
+    <string name="state_kb_2">"%1$s · %2$d KB"</string>
+    <string name="state_load">"Load"</string>
+    <string name="state_loaded_from">"Loaded from %1$s"</string>
+    <string name="state_pick_a_slot">"Pick a slot"</string>
+    <string name="state_pick_a_state">"Pick a state"</string>
+    <string name="state_saved_to">"Saved to %1$s"</string>
+    <string name="state_screenshot">"Screenshot"</string>
+    <string name="state_slot">"Slot %1$d"</string>
+    <string name="state_slot_10">"Slot 10"</string>
+    <string name="state_this_permanently_deletes_the_savestate_in">"This permanently deletes the savestate in this slot. It can\'t be undone."</string>
+    <string name="swap_screens_symbol" translatable="false">"⇅"</string>
+    <string name="toggle_controls_symbol" translatable="false">"◻"</string>
+    <string name="tools_bios_and_backup">"BIOS and backup"</string>
+    <string name="tools_bios_description">"The emulator boots with its built-in HLE BIOS. The real BIOS is only needed for encrypted ROMs. Copy nds_bios_arm7.bin (16384), nds_bios_arm9.bin (4096) and nds_firmware.bin (262144)."</string>
+    <string name="tools_choose_the_3_bios_files_they_are_validated_by">"Choose the 3 BIOS files. They are validated by size."</string>
+    <string name="tools_copies_the_emulator_s_data_tree_to_the_folder">"Copies the emulator\'s data tree to the folder you choose."</string>
+    <string name="tools_data_backup">"Data backup"</string>
+    <string name="tools_export_data_to_a_folder">"Export data to a folder"</string>
+    <string name="tools_export_your_save_states_cheats_config_and">"Export your save states, cheats, config and profiles to a folder."</string>
+    <plurals name="tools_exported_files">
+        <item quantity="one">"Exported %1$d file."</item>
+        <item quantity="other">"Exported %1$d files."</item>
+    </plurals>
+    <string name="tools_exporting">"Exporting…"</string>
+    <string name="tools_install_bios">"Install BIOS"</string>
+    <plurals name="tools_installed_bios_file_s">
+        <item quantity="one">"Installed %1$d BIOS file."</item>
+        <item quantity="other">"Installed %1$d BIOS files."</item>
+    </plurals>
+    <string name="tools_installed_correctly">"Installed correctly"</string>
+    <string name="tools_missing_or_wrong_size">"Missing or wrong size"</string>
+    <string name="tools_nintendo_bios_optional">"Nintendo BIOS (optional)"</string>
+    <string name="tools_no_valid_bios_recognized_check_the_size">"No valid BIOS recognized (check the size)."</string>
+    <string name="ui_nav">"NAV"</string>
+    <string name="unknown_symbol" translatable="false">"?"</string>
+</resources>

@@ -1,0 +1,6 @@
+[submodule "app/src/main/cpp/rcheevos"]
+	path = app/src/main/cpp/rcheevos
+	url = https://github.com/RetroAchievements/rcheevos.git
+[submodule "core"]
+	path = core
+	url = https://github.com/SapphireRhodonite/SeedlessDS-Core.git
