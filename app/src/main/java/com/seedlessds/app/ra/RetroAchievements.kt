@@ -136,8 +136,16 @@ object RetroAchievements {
         settings = loadSettings()
         exec.execute {
             if (!inited) { inited = RaNative.raInit(); com.seedlessds.app.AppLog.i(TAG, "raInit=$inited") }
-            if (inited) applyTogglesNative()
+            if (inited) {
+                RaNative.raSetHost(RaHostOverride.load(ctx))
+                applyTogglesNative()
+            }
         }
+    }
+
+    fun setHostOverride(ctx: Context, clientHost: String?) {
+        if (!RaHostOverride.store(ctx, clientHost)) return
+        exec.execute { if (inited) RaNative.raSetHost(clientHost) }
     }
 
     fun isEnabled() = settings.enabled
