@@ -1,0 +1,16 @@
+Quilez interpolation filter
+
+The packaged quilez.dsd uses the sharp() function from Image Adjustment by hunterk.
+The upstream file declares:
+
+//   Image Adjustment
+//   Author: hunterk
+//   License: Public domain
+
+Source: https://github.com/libretro/glsl-shaders/blob/148ce728155232a6b63be772c1810bd84728f359/misc/shaders/image-adjustment.glsl
+SHA-256: 5cb26c7272628f4c0ca2a26b28f6d3d34f1ae3bec7bc3d14d432ef41173e066e
+
+Upstream credits "Improved texture interpolation" by Inigo Quilez:
+https://iquilezles.org/articles/texture/
+
+SeedlessDS adapts only the sharp() function to its GLES sampler and texture-size uniforms, with its own vertex/fragment wrapper. Gamma, grain, saturation, contrast, masks and other Image Adjustment features are not included. The upstream file and reproducible generator are retained under resources/tools/assets in the corresponding-source archive. This notice identifies the dedication of the selected hunterk implementation; it does not assign a license to other Quilez or DraStic shader files.

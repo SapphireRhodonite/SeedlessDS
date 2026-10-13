@@ -1,0 +1,16 @@
+SeedlessDS — licenses and attribution
+
+Original or authorized project code: GPL-3.0-or-later.
+Copyright (C) 2026 SapphireRhodonite and the respective authors identified in the source and history. DraStic-derived code retains attribution to its original authors, including Exophase.
+
+This program is free software for the original or authorized code: you may redistribute and modify that code under GNU GPL version 3 or, at your option, any later version. It is provided WITHOUT ANY WARRANTY, including MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Read GPL-3.0 for the full terms. Third-party components retain their individual terms.
+
+The unchanged DeadSkullzJr 20211225 cheat catalog retains its supplied AGPL-3.0, XML source and contributor notices. The game database derives from melonDS GPL-3.0-or-later. Boxart images are downloaded on demand from libretro's thumbnail service and belong to their respective rights holders; see Boxart-source.
+
+Native dependencies: libarchive 3.8.9 (BSD notices; BLAKE2 Apache-2.0 option; public-domain parts), unarr 1.1.1 (LGPL-3.0, public-domain PPMd), Lua 5.3.0 (MIT), LZMA SDK 9.20 selected C decoders (public domain), rcheevos 12.3 (MIT; md5 zlib-style; AES public-domain/Unlicense), Android system zlib (zlib).
+
+Assets: six GPL-2.0-or-later shaders with their notices; BIOS replacements BSD-2-Clause; Manrope and Space Grotesk OFL-1.1; FXAA 3.11 BSD-3-Clause; SMAA upstream MIT terms with binary-notice exception; Timothy Lottes Scanline public-domain dedication; hunterk Image Adjustment interpolation function in Quilez with its public-domain dedication. See the individual HQ2X, Scale2X and other resource notices for upstream attribution and modifications.
+
+Android libraries and their exact versions/hashes appear in Android-dependencies. Apache-2.0 licenses are retained; OkHttp's Public Suffix List has separate MPL-2.0 terms and NOTICE.
+
+Corresponding-source archives contain exact source revisions, submodules, dependency and resource sources, generators, modifications and build instructions.

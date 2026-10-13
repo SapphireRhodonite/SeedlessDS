@@ -10,7 +10,7 @@ SeedlessDS is the smaller sibling of WatermelonDS: the same watermelon idea, wit
 <img width="350" height="300" alt="SeedlessDS settings" src="https://github.com/user-attachments/assets/b23fb273-9a10-4244-b2b5-f05003c48c4d" />
 </p>
 
-> **Current status:** `1.0.0`. The Android app uses [SeedlessCoreDS](core/README.md), a Nintendo DS emulation library reconstructed from DraStic r2.6.0.4a and built from source. The original DraStic APK and prebuilt core are not required to build or run SeedlessDS.
+> **Current status:** `1.0.1`. The Android app uses [SeedlessCoreDS](core/README.md), a Nintendo DS emulation library reconstructed from DraStic r2.6.0.4a and built from source. The original DraStic APK and prebuilt core are not required to build or run SeedlessDS.
 
 ## What it is
 
@@ -82,7 +82,7 @@ The app recognizes `.nds`, `.dsi`, `.srl` and `.ids` game files and includes arc
 | Display and audio | EGL/OpenGL ES and OpenSL ES |
 | Supported ABI | `arm64-v8a` |
 | Android | API 21 minimum; API 35 compile/target SDK |
-| Version | `1.0.0`, version code 110 |
+| Version | `1.0.1`, version code 111 |
 
 ### Build from source
 
@@ -92,7 +92,7 @@ Initialize the submodules from the repository root:
 git submodule update --init --recursive
 ```
 
-Use JDK 17, Android SDK 35, NDK `25.2.9519653` and CMake `3.22.1`. The Gradle wrapper selects Gradle `8.11.1`. Set the SDK location through `local.properties` or your Android SDK environment. The native build downloads pinned UnRAR and LZMA SDK sources with SHA-256 verification; see [third-party licenses](core/third_party/LICENSES.md).
+Use JDK 25, Android SDK 35 with Build Tools 36.0.0, NDK `25.2.9519653` and CMake `3.22.1`. The Gradle wrapper selects Gradle `9.7.0`, with Android Gradle Plugin `9.3.1` and Kotlin/Compose compiler `2.4.21`. Set the SDK location through `local.properties` or your Android SDK environment. The Gradle daemon requires a locally installed JDK 25. Java/Kotlin bytecode remains targeted to Java 17 and is converted to Android DEX; the minimum Android API level remains 21. The native build downloads pinned libarchive, unarr and LZMA SDK sources with SHA-256 verification; see [third-party licenses](core/third_party/LICENSES.md).
 
 Build the debug app (`com.seedlessds.app.debug`):
 
@@ -131,4 +131,6 @@ Include the device model, Android version, game, internal resolution, display la
 
 ## License
 
-A project-wide license has not yet been selected. The included dependencies retain their own licenses; see [rcheevos](app/src/main/cpp/rcheevos/LICENSE) and the [core dependency list](core/third_party/LICENSES.md).
+Original or authorized project code is licensed under GPL-3.0-or-later; see [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Bundled dependencies and resources retain their individual terms, including the DeadSkullzJr cheat catalog's AGPL-3.0 and XML source.
+
+Release source archives include exact app/core revisions, dependency sources, resource sources, generators and build instructions. The checked-out Android product builds directly with Gradle as described above.

@@ -1,0 +1,46 @@
+//----------------------------------------------------------------------------------
+// Fxaa3_11.h - version used in CMAA2 sample (https://github.com/GameTechDev/CMAA2)
+// Original source: https://github.com/NVIDIAGameWorks/D3DSamples/blob/master/samples/FXAA/src/FXAA3_11.h
+// Modifications:   Added FXAA_LUMA_SEPARATE_R8 code path for the ability to load
+//                  precomputed luma from a separate R8 texture (still using gather)
+//                  instead of using .a channel in the color buffer in order to
+//                  enable use of formats without alpha channel (such as 
+//                  R11G11B10_FLOAT for HDR displays). This approach also reduces 
+//                  memory bandwidth usage and improves performance in memory bound 
+//                  scenarios when compared to using alpha channel to store luma.
+//----------------------------------------------------------------------------------
+// File:        FXAA\src/FXAA3_11.h
+// SDK Version: v1.2 
+// Email:       gameworks@nvidia.com
+// Site:        http://developer.nvidia.com/
+//
+// Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//----------------------------------------------------------------------------------
+
+Source: https://github.com/GameTechDev/CMAA2/tree/071c6b0857559f4e36f614362e6d2aab1b61938a
+FXAA 3.11; wrappers modified for GLES 100, luminance calculation and texture offsets by the SeedlessDS maintainer.

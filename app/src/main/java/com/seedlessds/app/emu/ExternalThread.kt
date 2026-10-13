@@ -58,7 +58,7 @@ internal class ExternalThread(
         lock.notifyAll()
     }
 
-    fun terminate() { synchronized(lock) { quit = true; lock.notifyAll() }; runCatching { join(1000) } }
+    fun terminate() { synchronized(lock) { quit = true; lock.notifyAll() }; join() }
 
     override fun run() {
         val out = arrayOfNulls<EGLConfig>(1); val num = IntArray(1)

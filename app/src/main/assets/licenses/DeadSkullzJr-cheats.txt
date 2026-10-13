@@ -1,0 +1,11 @@
+DeadSkullzJr's NDS(i) Cheat Databases — 2021-12-25
+
+The bundled usrcheat.dat is the unchanged catalog from the author's Bitbucket package at commit 963fff3858de7539891ef7918d992b8b06972a48. Its package supplies the GNU Affero General Public License, version 3; see AGPL-3.0. Copyright and attribution remain with DeadSkullzJr and the individual contributors named in the catalog. No GPL-only relabeling is made for this asset.
+
+Original source: https://bitbucket.org/DeadSkullzJr/nds-i-cheat-databases/get/963fff3858de.zip
+Archived original: https://web.archive.org/web/20220920123541id_/https://bitbucket.org/DeadSkullzJr/nds-i-cheat-databases/get/963fff3858de.zip
+Author's project page: https://gbatemp.net/threads/deadskullzjrs-nds-i-cheat-databases.488711/
+
+The corresponding-source archive retains cheats.xml, LICENSE, Changelog.txt, Compatibility List.txt and source hashes under resources/tools/assets/cheats/. The binary DAT and XML are unmodified.
+
+The engine and manual cheat facilities keep their existing implementation. Original attribution in individual code names and notes is retained. This program and database are provided without warranty as described in their respective licenses.

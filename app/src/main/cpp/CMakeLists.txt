@@ -38,7 +38,7 @@ add_library(recon_fn SHARED
 target_include_directories(recon_fn PRIVATE
         "${SEEDLESS_CORE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}"
         "${SEEDLESS_CORE_DIR}/third_party/lua")
-target_link_libraries(recon_fn seedless_lua seedless_unrar seedless_lzma z)
+target_link_libraries(recon_fn seedless_lua seedless_libarchive seedless_unarr seedless_lzma z)
 include("${SEEDLESS_CORE_DIR}/src/CMakeLists.txt")
 
 add_library(recon SHARED

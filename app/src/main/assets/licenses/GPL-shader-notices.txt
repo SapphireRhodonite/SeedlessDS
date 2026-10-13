@@ -1,0 +1,141 @@
+lcd1x.dsd
+// lcd1x - Simple LCD 'scanline' shader, based on lcd3x
+// 
+// Original code by Gigaherz, released into the public domain
+// 
+// 'Ported' (i.e. copy/paste) to DraStic format by jdgleaver
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+// 
+// lcd1x differs from lcd3x in the following manner:
+// 
+// > Omits LCD-style colour separation
+// 
+// > Has 'correctly' aligned scanlines
+// 
+// > Automatically supports 'high resolution 3d rendering' ON or OFF
+=============================================
+
+
+
+lcd1x+nds_color.dsd
+// lcd1x+nds_color - Simple LCD 'scanline' shader, based on lcd3x
+// 
+// - Original lcd3x code by Gigaherz, released into the public domain
+// 
+// - Original 'nds_color' code written by hunterk, modified by Pokefan531 and
+//   released into the public domain
+// 
+// 'Ported' (i.e. copy/paste) to DraStic format by jdgleaver
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+// 
+// lcd1x+nds_color differs from lcd3x in the following manner:
+// 
+// > Omits LCD-style colour separation
+// 
+// > Has 'correctly' aligned scanlines
+// 
+// > Automatically supports 'high resolution 3d rendering' ON or OFF
+// 
+// > Applies NDS colour correction
+=============================================
+
+
+
+sharp_bilinear.dsd
+// sharp_bilinear - This is an integer prescale filter that should be combined
+// with bilinear hardware filtering (GL_LINEAR filter or some such) to achieve
+// a smooth scaling result with minimum blur. This is good for pixel graphics
+// that are scaled by non-integer factors.
+// 
+// Original code copyright (C) rsn8887 & TheMaister and released into the
+// public domain
+// 
+// 'Ported' (i.e. copy/paste) to DraStic format by jdgleaver
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+=============================================
+
+
+
+sharp_bilinear+nds_color.dsd
+// sharp_bilinear+nds_color - This is an integer prescale filter that should be combined
+// with bilinear hardware filtering (GL_LINEAR filter or some such) to achieve
+// a smooth scaling result with minimum blur. This is good for pixel graphics
+// that are scaled by non-integer factors. Also applies colour correction to mimic
+// the display characteristics of an NDS Phat
+// 
+// - Original 'sharp_bilinear' code copyright (C) rsn8887 & TheMaister and
+//   released into the public domain
+// 
+// - Original 'nds_color' code written by hunterk, modified by Pokefan531 and
+//   released into the public domain
+// 
+// 'Ported' (i.e. copy/paste) to DraStic format by jdgleaver
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+=============================================
+
+
+
+zfast_lcd.dsd
+// zfast_lcd - A very simple LCD shader meant to be used at 1080p
+// 
+// Original code copyright (C) 2017 Greg Hogan (SoltanGris42)
+// 
+// 'Ported' (i.e. copy/paste) to DraStic format by jdgleaver
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+// 
+// Notes: This shader just applies a grid effect, darkening the borders of
+//        'virtual' pixels at the native NDS resolution to imitate an LCD
+//        screen. You can change the darkness/thickness of the borders.
+//        The shader is compatible with both 'native' and 'high resolution'
+//        3D rendering modes.
+// 
+// *** Integer screen scaling is recommended for best results
+=============================================
+
+
+
+zfast_lcd+nds_color.dsd
+// zfast_lcd+nds_color - A very simple LCD shader meant to be used at 1080p
+// 
+// - Original 'zfast_lcd' code copyright (C) 2017 Greg Hogan (SoltanGris42)
+// 
+// - Original 'nds_color' code written by hunterk, modified by Pokefan531 and
+//   released into the public domain
+// 
+// 'Ported' (i.e. copy/paste) to DraStic format by jdgleaver
+// 
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
+// 
+// Notes: This shader applies colour correction to mimic the display characteristics
+//        of an NDS Phat, then applies a simple grid effect, darkening the borders of
+//        'virtual' pixels at the native NDS resolution to imitate an LCD screen.
+//        You can change the darkness/thickness of the borders.
+//        The shader is compatible with both 'native' and 'high resolution' 3D
+//        rendering modes.
+// 
+// *** Integer screen scaling is recommended for best results
+=============================================
+

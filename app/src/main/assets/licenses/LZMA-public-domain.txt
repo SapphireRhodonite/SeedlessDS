@@ -1,0 +1,8 @@
+LZMA SDK 9.20
+Igor Pavlov
+https://www.7-zip.org/sdk.html
+https://www.7-zip.org/a/lzma920.tar.bz2
+
+LZMA SDK is placed in the public domain.
+
+Only the C 7z/LZMA/LZMA2 decoder files listed in core/third_party/CMakeLists.txt are built. No RAR implementation from this SDK is compiled. Local change: 7zFile.c opens files through the existing file resolver.

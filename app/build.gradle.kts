@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -20,8 +19,8 @@ android {
         applicationId = "com.seedlessds.app"
         minSdk = 21
         targetSdk = 35
-        versionCode = 110
-        versionName = "1.0.0"
+        versionCode = 111
+        versionName = "1.0.1"
 
         ndk {
             abiFilters += "arm64-v8a"
@@ -69,12 +68,14 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            buildConfigField("boolean", "FRAME_CONTROLS", (project.findProperty("frameControls") == "true").toString())
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false
+            buildConfigField("boolean", "FRAME_CONTROLS", "true")
             signingConfig = signingConfigs.getByName("shared")
             applicationIdSuffix = ".debug"
         }
@@ -89,7 +90,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 
     packaging {
         jniLibs { useLegacyPackaging = false }

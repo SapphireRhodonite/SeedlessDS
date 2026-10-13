@@ -230,6 +230,7 @@ Java_com_seedlessds_app_ra_RaNative_raSetHost(JNIEnv *env, jclass c, jstring hos
     if (!g_client) return;
     if (!host) { rc_client_set_host(g_client, ""); return; }
     const char *h = (*env)->GetStringUTFChars(env, host, NULL);
+    if (!h) return;
     rc_client_set_host(g_client, h);
     (*env)->ReleaseStringUTFChars(env, host, h);
 }

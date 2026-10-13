@@ -1,0 +1,6 @@
+melonDS ROMList.cpp
+Copyright (C) 2016-2026 melonDS team
+GPL-3.0-or-later
+https://github.com/melonDS-emu/melonDS/tree/906e9ebb27da8c6a715cd7abab4abfe8a8d29427
+
+The bundled game_database.xml is generated from this upstream source and separately attributed additions. The source, generator and contribution instructions are retained under resources/tools/assets/ in the corresponding-source archive. See GPL-3.0 for the full license.

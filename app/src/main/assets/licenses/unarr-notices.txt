@@ -1,0 +1,168 @@
+_7z/_7z.c
+/* Copyright 2018 the unarr project authors (see AUTHORS file).
+   License: LGPLv3 */
+
+common/allocator.h
+/* Copyright 2015 the unarr project authors (see AUTHORS file).
+   License: LGPLv3 */
+
+common/crc32.c
+/* Copyright 2022 the unarr project authors (see AUTHORS file).
+   License: LGPLv3 */
+
+common/crc32.c
+/*
+   crc32 calculation based on Intel slice-by-8 algorithm with lookup-table generation code
+   adapted from https://gnunet.org/svn/gnunet/src/util/crypto_crc.c (public domain)        */
+
+lzmasdk/7z.h
+/* 7z.h -- 7z interface
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/7zArcIn.c
+/* 7zArcIn.c -- 7z Input functions
+2023-05-11 : Igor Pavlov : Public domain */
+
+lzmasdk/7zBuf.c
+/* 7zBuf.c -- Byte Buffer
+2017-04-03 : Igor Pavlov : Public domain */
+
+lzmasdk/7zBuf.h
+/* 7zBuf.h -- Byte Buffer
+2023-03-04 : Igor Pavlov : Public domain */
+
+lzmasdk/7zCrc.h
+/* 7zCrc.h -- CRC32 calculation
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/7zDec.c
+/* 7zDec.c -- Decoding from 7z folder
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/7zStream.c
+/* 7zStream.c -- 7z Stream functions
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/7zTypes.h
+/* 7zTypes.h -- Basic types
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/7zWindows.h
+/* 7zWindows.h -- StdAfx
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Bcj2.c
+/* Bcj2.c -- BCJ2 Decoder (Converter for x86 code)
+2023-03-01 : Igor Pavlov : Public domain */
+
+lzmasdk/Bcj2.h
+/* Bcj2.h -- BCJ2 converter for x86 code (Branch CALL/JUMP variant2)
+2023-03-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Bra.c
+/* Bra.c -- Branch converters for RISC code
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Bra.h
+/* Bra.h -- Branch converters for executables
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Bra86.c
+/* Bra86.c -- Branch converter for X86 code (BCJ)
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Compiler.h
+/* Compiler.h : Compiler specific defines and pragmas
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/CpuArch.c
+/* CpuArch.c -- CPU specific code
+2023-05-18 : Igor Pavlov : Public domain */
+
+lzmasdk/CpuArch.h
+/* CpuArch.h -- CPU specific code
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Delta.c
+/* Delta.c -- Delta converter
+2021-02-09 : Igor Pavlov : Public domain */
+
+lzmasdk/Delta.h
+/* Delta.h -- Delta converter
+2023-03-03 : Igor Pavlov : Public domain */
+
+lzmasdk/Lzma2Dec.c
+/* Lzma2Dec.c -- LZMA2 Decoder
+2023-03-03 : Igor Pavlov : Public domain */
+
+lzmasdk/Lzma2Dec.h
+/* Lzma2Dec.h -- LZMA2 Decoder
+2023-03-03 : Igor Pavlov : Public domain */
+
+lzmasdk/LzmaDec.c
+/* LzmaDec.c -- LZMA Decoder
+2023-04-07 : Igor Pavlov : Public domain */
+
+lzmasdk/LzmaDec.h
+/* LzmaDec.h -- LZMA Decoder
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/Ppmd.h
+/* Ppmd.h -- PPMD codec common code
+2023-03-05 : Igor Pavlov : Public domain
+This code is based on PPMd var.H (2001): Dmitry Shkarin : Public domain */
+
+lzmasdk/Ppmd7.c
+/* Ppmd7.c -- PPMdH codec
+2023-04-02 : Igor Pavlov : Public domain
+This code is based on PPMd var.H (2001): Dmitry Shkarin : Public domain */
+
+lzmasdk/Ppmd7.h
+/* Ppmd7.h -- Ppmd7 (PPMdH) compression codec
+2023-04-02 : Igor Pavlov : Public domain
+This code is based on:
+  PPMd var.H (2001): Dmitry Shkarin : Public domain */
+
+lzmasdk/Ppmd7Dec.c
+/* Ppmd7Dec.c -- Ppmd7z (PPMdH with 7z Range Coder) Decoder
+2023-04-02 : Igor Pavlov : Public domain
+This code is based on:
+  PPMd var.H (2001): Dmitry Shkarin : Public domain */
+
+lzmasdk/Ppmd7aDec.c
+/* Ppmd7aDec.c -- PPMd7a (PPMdH) Decoder
+2023-04-02 : Igor Pavlov : Public domain
+This code is based on:
+  PPMd var.H (2001): Dmitry Shkarin : Public domain
+  Carryless rangecoder (1999): Dmitry Subbotin : Public domain */
+
+lzmasdk/Ppmd8.c
+/* Ppmd8.c -- PPMdI codec
+2023-04-02 : Igor Pavlov : Public domain
+This code is based on PPMd var.I (2002): Dmitry Shkarin : Public domain */
+
+lzmasdk/Ppmd8.h
+/* Ppmd8.h -- Ppmd8 (PPMdI) compression codec
+2021-04-13 : Igor Pavlov : Public domain
+This code is based on:
+  PPMd var.I (2002): Dmitry Shkarin : Public domain
+  Carryless rangecoder (1999): Dmitry Subbotin : Public domain */
+
+lzmasdk/Ppmd8Dec.c
+/* Ppmd8Dec.c -- Ppmd8 (PPMdI) Decoder
+2023-04-02 : Igor Pavlov : Public domain
+This code is based on:
+  PPMd var.I (2002): Dmitry Shkarin : Public domain
+  Carryless rangecoder (1999): Dmitry Subbotin : Public domain */
+
+lzmasdk/Precomp.h
+/* Precomp.h -- StdAfx
+2023-04-02 : Igor Pavlov : Public domain */
+
+lzmasdk/RotateDefs.h
+/* RotateDefs.h -- Rotate functions
+2023-06-18 : Igor Pavlov : Public domain */
+
+unarr.h
+/* Copyright 2020 the unarr project authors (see AUTHORS file).
+   License: LGPLv3 */

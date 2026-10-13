@@ -201,6 +201,7 @@ private class DsPresentation(
 class ExternalDisplayManager(private val ctx: Context) {
     private val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private var presentation: DsPresentation? = null
+    private var started = false
 
     @Volatile var touchSink: ((Boolean, Int) -> Unit)? = null
 
@@ -211,12 +212,14 @@ class ExternalDisplayManager(private val ctx: Context) {
     }
 
     fun start() {
-        if (SettingsRepo.current.extDisplayType == 0) return
+        if (started || SettingsRepo.current.extDisplayType == 0) return
+        started = true
         dm.registerDisplayListener(listener, null)
         refresh()
     }
 
     fun stop() {
+        started = false
         runCatching { dm.unregisterDisplayListener(listener) }
         dismiss()
     }
@@ -225,8 +228,6 @@ class ExternalDisplayManager(private val ctx: Context) {
     @Volatile var onTap: (() -> Unit)? = null
     @Volatile private var editing = false
     @Volatile private var extSelected = false
-    fun pause() {}
-    fun resume() {}
     fun applyDisplaySettings() { presentation?.applyDisplaySettings() }
     fun setEdit(editing: Boolean, selected: Boolean) {
         this.editing = editing; this.extSelected = selected
@@ -243,6 +244,7 @@ class ExternalDisplayManager(private val ctx: Context) {
     }
 
     private fun refresh() {
+        if (!started) return
         val disp = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).firstOrNull { isRealDisplay(it) }
         ExternalSurface.attached = disp != null
         if (disp == null) { dismiss(); return }

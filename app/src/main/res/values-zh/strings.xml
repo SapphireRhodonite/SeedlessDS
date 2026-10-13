@@ -699,4 +699,11 @@
     <string name="tools_nintendo_bios_optional">"任天堂 BIOS（可选）"</string>
     <string name="tools_no_valid_bios_recognized_check_the_size">"未识别到有效的 BIOS（请检查文件大小）。"</string>
     <string name="ui_nav">"导航"</string>
+    <string name="licenses_title">许可证与致谢</string>
+    <string name="settings_licenses">许可证</string>
+    <string name="settings_licenses_summary">项目与第三方声明</string>
+    <string name="licenses_load_error">无法加载许可证声明。</string>
+    <string name="settings_use_alt_app_icon">使用备用应用图标</string>
+    <string name="settings_alt_app_icon_summary">在主屏幕上使用微笑的西瓜图标。</string>
+    <string name="settings_alt_app_icon_error">无法更改应用图标，请重试。</string>
 </resources>

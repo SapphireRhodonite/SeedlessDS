@@ -259,6 +259,8 @@ fun EmulatorScreen(
                 PerfOverlay(Modifier.align(Alignment.TopStart).padding(start = 90.dp, top = 16.dp))
             if (settings.showScale && !editingControls)
                 ScaleOverlay(Modifier.align(Alignment.TopEnd).padding(end = 90.dp, top = 16.dp))
+            if (com.seedlessds.app.BuildConfig.FRAME_CONTROLS && !editingControls)
+                FrameControls(Modifier.align(Alignment.TopCenter).padding(top = 16.dp))
             if (editingControls) {
                 if (hasExternal()) ExtScreenHandle(selectedId == "extScreen") { selectedId = "extScreen" }
 

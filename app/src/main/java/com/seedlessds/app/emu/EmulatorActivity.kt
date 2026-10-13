@@ -39,21 +39,25 @@ class EmulatorActivity : ComponentActivity() {
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_LOAD_SLOT = "load_slot"
         private const val TAG = "SeedlessEmu"
-        @Volatile private var inited = false
+        private var pendingClose: kotlinx.coroutines.CompletableDeferred<Unit>? = null
         const val UP = 0; const val DOWN = 1; const val LEFT = 2; const val RIGHT = 3
         const val A = 4; const val B = 5; const val X = 6; const val Y = 7
         const val L = 8; const val R = 9; const val START = 10; const val SELECT = 11
     }
 
+    private var inited = false
     private lateinit var glView: DsGlView
     private var emuThread: Thread? = null
+    internal var isClosing = false
+        private set
+    private var closed = false
     @Volatile private var romKey: String = "game.nds"
     private var extDisplay: ExternalDisplayManager? = null
     private val externalInfo by lazy { ExternalInfoController(this) }
-    private var externalInfoActive = false
+    private var externalInfoActive: Boolean? = null
     private val extTapState = androidx.compose.runtime.mutableIntStateOf(0)
     @Volatile private var menuOpen = false
-    @Volatile private var appForeground = true
+    @Volatile private var appForeground = false
     private var libraryUri: Uri? = null
     private var sessionStart = 0L
     @Volatile private var bootHold = true
@@ -62,10 +66,12 @@ class EmulatorActivity : ComponentActivity() {
     private var bootTitle = ""
 
     private fun refreshExternalMode() {
-        setExternalInfoMode(menuOpen || booting)
+        if (isClosing) return
+        setExternalInfoMode(if (appForeground) menuOpen || booting else null)
     }
 
     private fun refreshPauseState() {
+        if (isClosing || !inited) return
         val pause = menuOpen || !appForeground || bootHold
         RuntimeControl.lifecyclePaused = pause
         try { SeedlessCore.pause(if (pause) 1 else 0) } catch (_: Throwable) {}
@@ -73,6 +79,15 @@ class EmulatorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val previous = pendingClose
+        if (previous == null) createEmulation()
+        else lifecycleScope.launch {
+            previous.await()
+            if (!isFinishing && !isDestroyed) createEmulation()
+        }
+    }
+
+    private fun createEmulation() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enterImmersive()
         EmuAssets.ensureInstalled(this)
@@ -238,7 +253,7 @@ class EmulatorActivity : ComponentActivity() {
             extDisplay = ExternalDisplayManager(this).also {
                 it.touchSink = { active, packed -> glView.pushTouch(active, packed) }
                 it.onTap = { runOnUiThread { extTapState.intValue++ } }
-                if (!externalInfoActive) it.start()
+                if (externalInfoActive == false) it.start()
             }
         }
     }
@@ -356,7 +371,7 @@ class EmulatorActivity : ComponentActivity() {
 
     private var errorShown = false
     private fun showLoadError() {
-        if (errorShown || isFinishing) return
+        if (errorShown || isFinishing || isClosing) return
         errorShown = true
         android.app.AlertDialog.Builder(this)
             .setTitle(getString(AppR.string.emu_failed_to_load_rom))
@@ -377,6 +392,7 @@ class EmulatorActivity : ComponentActivity() {
     private var keyR = false
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (isClosing || !::glView.isInitialized) return true
         KeyCapture.onKey?.let { capture ->
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) capture(event.keyCode)
             return true
@@ -414,6 +430,7 @@ class EmulatorActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: android.view.MotionEvent): Boolean {
+        if (isClosing || !::glView.isInitialized) return true
         if (event.source and android.view.InputDevice.SOURCE_JOYSTICK == android.view.InputDevice.SOURCE_JOYSTICK &&
             event.action == android.view.MotionEvent.ACTION_MOVE) {
             val dz = 0.5f
@@ -440,11 +457,12 @@ class EmulatorActivity : ComponentActivity() {
         return super.onGenericMotionEvent(event)
     }
 
-    private fun setExternalInfoMode(active: Boolean) {
+    private fun setExternalInfoMode(active: Boolean?) {
         if (externalInfoActive == active) return
         externalInfoActive = active
-        if (active) {
-            extDisplay?.stop()
+        extDisplay?.stop()
+        externalInfo.detach()
+        if (active == true) {
             externalInfo.attach()
             externalInfo.setContent {
                 if (bootingState.value) {
@@ -454,9 +472,8 @@ class EmulatorActivity : ComponentActivity() {
                     if (block != null) block() else ExternalIdleInfo()
                 }
             }
-        } else {
+        } else if (active == false) {
             ExternalInfoBus.clear()
-            externalInfo.detach()
             extDisplay?.start()
         }
     }
@@ -469,27 +486,20 @@ class EmulatorActivity : ComponentActivity() {
         appForeground = false
         refreshPauseState()
         if (::glView.isInitialized) glView.onPause()
-        extDisplay?.pause()
-        if (!isFinishing) showResumeNotification()
+        refreshExternalMode()
+        if (!isFinishing && !isClosing) showResumeNotification()
     }
 
     override fun onResume() {
         super.onResume()
+        if (isClosing) return
         sessionStart = System.currentTimeMillis()
         if (::glView.isInitialized) glView.onResume()
-        extDisplay?.resume()
         cancelResumeNotification()
         startCpuLoad()
         appForeground = true
         refreshPauseState()
-        if (booting) {
-            window.decorView.post {
-                if (booting) {
-                    externalInfoActive = false
-                    refreshExternalMode()
-                }
-            }
-        }
+        refreshExternalMode()
     }
 
     private fun showResumeNotification() = runCatching {
@@ -525,24 +535,59 @@ class EmulatorActivity : ComponentActivity() {
 
 
 
-    override fun onDestroy() {
-        com.seedlessds.app.AppLog.i(TAG, "onDestroy")
-        reconOpenRom?.let {
-            if (com.seedlessds.app.Recon.available) {
-                com.seedlessds.app.Recon.rom("close", it)
-            }
-            reconOpenRom = null
+    override fun finish() {
+        if (closed || !inited) {
+            super.finish()
+            return
         }
-        super.onDestroy()
-        setExternalInfoMode(false)
+        closeEmulation()
+    }
+
+    private fun closeEmulation() {
+        if (isClosing || !inited) return
+        isClosing = true
+        val completion = kotlinx.coroutines.CompletableDeferred<Unit>()
+        pendingClose = completion
+        setExternalInfoMode(null)
+        ExternalInfoBus.clear()
         commitPlayTime()
+        val rumble = rumbleThread
         stopRumblePoll()
         stopCpuLoad()
         com.seedlessds.app.ra.RetroAchievements.unloadGame()
         cancelResumeNotification()
         extDisplay?.stop()
-        try { SeedlessCore.quit(); emuThread?.join(2000); SeedlessCore.release() } catch (_: Throwable) {}
-        RuntimeControl.detach(this)
-        inited = false
+        if (::glView.isInitialized) glView.stopRendering()
+        if (!isDestroyed) setContent {}
+        Thread({
+            try {
+                if (::glView.isInitialized) glView.awaitRenderingStopped()
+                rumble?.join()
+                SeedlessCore.quit()
+                emuThread?.join()
+                SeedlessCore.release()
+                runOnUiThread {
+                    reconOpenRom?.let {
+                        if (com.seedlessds.app.Recon.available) com.seedlessds.app.Recon.rom("close", it)
+                        reconOpenRom = null
+                    }
+                    RuntimeControl.detach(this)
+                    inited = false
+                    closed = true
+                    pendingClose = null
+                    completion.complete(Unit)
+                    com.seedlessds.app.AppLog.i(TAG, "emulation closed")
+                    if (!isDestroyed) super.finish()
+                }
+            } catch (error: Throwable) {
+                com.seedlessds.app.AppLog.e(TAG, "emulation close failed", error)
+            }
+        }, "seedless-close").start()
+    }
+
+    override fun onDestroy() {
+        com.seedlessds.app.AppLog.i(TAG, "onDestroy")
+        super.onDestroy()
+        if (!closed) closeEmulation()
     }
 }

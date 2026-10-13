@@ -1,83 +1,235 @@
-
+//----------------------------------------------------------------------------------
+// Fxaa3_11.h - version used in CMAA2 sample (https://github.com/GameTechDev/CMAA2)
+// Original source: https://github.com/NVIDIAGameWorks/D3DSamples/blob/master/samples/FXAA/src/FXAA3_11.h
+// Modifications:   Added FXAA_LUMA_SEPARATE_R8 code path for the ability to load
+//                  precomputed luma from a separate R8 texture (still using gather)
+//                  instead of using .a channel in the color buffer in order to
+//                  enable use of formats without alpha channel (such as 
+//                  R11G11B10_FLOAT for HDR displays). This approach also reduces 
+//                  memory bandwidth usage and improves performance in memory bound 
+//                  scenarios when compared to using alpha channel to store luma.
+//----------------------------------------------------------------------------------
+// File:        FXAA\src/FXAA3_11.h
+// SDK Version: v1.2 
+// Email:       gameworks@nvidia.com
+// Site:        http://developer.nvidia.com/
+//
+// Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//----------------------------------------------------------------------------------
 <vertex>
 attribute vec2 a_vertex_coordinate;
 attribute vec2 a_texture_coordinate;
-
-varying vec4 v_pos_pos;
-
+varying vec2 v_pos;
 void main() {
-  gl_Position = vec4(a_vertex_coordinate.xy, 0.0, 1.0);
-  vec2 rcpFrame = u_texture_size.xy;
-  v_pos_pos.xy = a_texture_coordinate.xy;
-  v_pos_pos.zw = a_texture_coordinate.xy -
-                  (rcpFrame * (0.5 + FXAA_SUBPIX_SHIFT));
+    gl_Position = vec4(a_vertex_coordinate, 0.0, 1.0);
+    v_pos = a_texture_coordinate;
 }
 </vertex>
 
 <fragment>
+varying vec2 v_pos;
 uniform sampler2D u_texture;
-
-varying vec4 v_pos_pos;
-
-vec3 FxaaPixelShader(
-  vec4 posPos, // Output of FxaaVertexShader interpolated across screen.
-  sampler2D tex, // Input texture.
-  vec2 rcpFrame) // Constant {1.0/frameWidth, 1.0/frameHeight}.
-{
-/*---------------------------------------------------------*/
-/*---------------------------------------------------------*/
-    vec3 rgbNW = FxaaTexLod0(tex, posPos.zw).rgb;
-    vec3 rgbNE = FxaaTexOff(tex, posPos.zw, FxaaInt2(1,0), rcpFrame.xy).rgb;
-    vec3 rgbSW = FxaaTexOff(tex, posPos.zw, FxaaInt2(0,1), rcpFrame.xy).rgb;
-    vec3 rgbSE = FxaaTexOff(tex, posPos.zw, FxaaInt2(1,1), rcpFrame.xy).rgb;
-    vec3 rgbM  = FxaaTexLod0(tex, posPos.xy).rgb;
-/*---------------------------------------------------------*/
-    vec3 luma = vec3(0.299, 0.587, 0.114);
-    float lumaNW = dot(rgbNW, luma);
-    float lumaNE = dot(rgbNE, luma);
-    float lumaSW = dot(rgbSW, luma);
-    float lumaSE = dot(rgbSE, luma);
-    float lumaM  = dot(rgbM,  luma);
-/*---------------------------------------------------------*/
-    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
-    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
-/*---------------------------------------------------------*/
-    vec2 dir;
-    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
-    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-/*---------------------------------------------------------*/
-    float dirReduce = max(
-        (lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL),
-        FXAA_REDUCE_MIN);
-    float rcpDirMin = 1.0/(min(abs(dir.x), abs(dir.y)) + dirReduce);
-    dir = min(FxaaFloat2( FXAA_SPAN_MAX,  FXAA_SPAN_MAX),
-          max(FxaaFloat2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
-          dir * rcpDirMin)) * rcpFrame.xy;
-/*--------------------------------------------------------*/
-    vec3 rgbA = (1.0/2.0) * (
-        FxaaTexLod0(tex, posPos.xy + dir * (1.0/3.0 - 0.5)).rgb +
-        FxaaTexLod0(tex, posPos.xy + dir * (2.0/3.0 - 0.5)).rgb);
-    vec3 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (
-        FxaaTexLod0(tex, posPos.xy + dir * (0.0/3.0 - 0.5)).rgb +
-        FxaaTexLod0(tex, posPos.xy + dir * (3.0/3.0 - 0.5)).rgb);
-    float lumaB = dot(rgbB, luma);
-    if((lumaB < lumaMin) || (lumaB > lumaMax)) return rgbA;
-    return rgbB;
+ float FxaaLuma(vec4 rgba) { return dot(rgba.rgb, vec3(0.299, 0.587, 0.114)); }
+vec4 FxaaPixelShader(
+    vec2 pos,
+    vec4 fxaaConsolePosPos,
+    sampler2D tex,
+    sampler2D texLuma,
+    sampler2D fxaaConsole360TexExpBiasNegOne,
+    sampler2D fxaaConsole360TexExpBiasNegTwo,
+    vec2 fxaaQualityRcpFrame,
+    vec4 fxaaConsoleRcpFrameOpt,
+    vec4 fxaaConsoleRcpFrameOpt2,
+    vec4 fxaaConsole360RcpFrameOpt2,
+    float fxaaQualitySubpix,
+    float fxaaQualityEdgeThreshold,
+    float fxaaQualityEdgeThresholdMin,
+    float fxaaConsoleEdgeSharpness,
+    float fxaaConsoleEdgeThreshold,
+    float fxaaConsoleEdgeThresholdMin,
+    vec4 fxaaConsole360ConstDir
+) {
+    vec2 posM;
+    posM.x = pos.x;
+    posM.y = pos.y;
+        vec4 rgbyM = texture2D(tex, posM);
+        float lumaS = FxaaLuma(texture2D(texLuma, posM + (vec2( 0, 1) * fxaaQualityRcpFrame.xy)));
+        float lumaE = FxaaLuma(texture2D(texLuma, posM + (vec2( 1, 0) * fxaaQualityRcpFrame.xy)));
+        float lumaN = FxaaLuma(texture2D(texLuma, posM + (vec2( 0,-1) * fxaaQualityRcpFrame.xy)));
+        float lumaW = FxaaLuma(texture2D(texLuma, posM + (vec2(-1, 0) * fxaaQualityRcpFrame.xy)));
+    float maxSM = max(lumaS, rgbyM.w);
+    float minSM = min(lumaS, rgbyM.w);
+    float maxESM = max(lumaE, maxSM);
+    float minESM = min(lumaE, minSM);
+    float maxWN = max(lumaN, lumaW);
+    float minWN = min(lumaN, lumaW);
+    float rangeMax = max(maxWN, maxESM);
+    float rangeMin = min(minWN, minESM);
+    float rangeMaxScaled = rangeMax * fxaaQualityEdgeThreshold;
+    float range = rangeMax - rangeMin;
+    float rangeMaxClamped = max(fxaaQualityEdgeThresholdMin, rangeMaxScaled);
+    bool earlyExit = range < rangeMaxClamped;
+    if(earlyExit)
+            return rgbyM;
+        float lumaNW = FxaaLuma(texture2D(texLuma, posM + (vec2(-1,-1) * fxaaQualityRcpFrame.xy)));
+        float lumaSE = FxaaLuma(texture2D(texLuma, posM + (vec2( 1, 1) * fxaaQualityRcpFrame.xy)));
+        float lumaNE = FxaaLuma(texture2D(texLuma, posM + (vec2( 1,-1) * fxaaQualityRcpFrame.xy)));
+        float lumaSW = FxaaLuma(texture2D(texLuma, posM + (vec2(-1, 1) * fxaaQualityRcpFrame.xy)));
+    float lumaNS = lumaN + lumaS;
+    float lumaWE = lumaW + lumaE;
+    float subpixRcpRange = 1.0/range;
+    float subpixNSWE = lumaNS + lumaWE;
+    float edgeHorz1 = (-2.0 * rgbyM.w) + lumaNS;
+    float edgeVert1 = (-2.0 * rgbyM.w) + lumaWE;
+    float lumaNESE = lumaNE + lumaSE;
+    float lumaNWNE = lumaNW + lumaNE;
+    float edgeHorz2 = (-2.0 * lumaE) + lumaNESE;
+    float edgeVert2 = (-2.0 * lumaN) + lumaNWNE;
+    float lumaNWSW = lumaNW + lumaSW;
+    float lumaSWSE = lumaSW + lumaSE;
+    float edgeHorz4 = (abs(edgeHorz1) * 2.0) + abs(edgeHorz2);
+    float edgeVert4 = (abs(edgeVert1) * 2.0) + abs(edgeVert2);
+    float edgeHorz3 = (-2.0 * lumaW) + lumaNWSW;
+    float edgeVert3 = (-2.0 * lumaS) + lumaSWSE;
+    float edgeHorz = abs(edgeHorz3) + edgeHorz4;
+    float edgeVert = abs(edgeVert3) + edgeVert4;
+    float subpixNWSWNESE = lumaNWSW + lumaNESE;
+    float lengthSign = fxaaQualityRcpFrame.x;
+    bool horzSpan = edgeHorz >= edgeVert;
+    float subpixA = subpixNSWE * 2.0 + subpixNWSWNESE;
+    if(!horzSpan) lumaN = lumaW;
+    if(!horzSpan) lumaS = lumaE;
+    if(horzSpan) lengthSign = fxaaQualityRcpFrame.y;
+    float subpixB = (subpixA * (1.0/12.0)) - rgbyM.w;
+    float gradientN = lumaN - rgbyM.w;
+    float gradientS = lumaS - rgbyM.w;
+    float lumaNN = lumaN + rgbyM.w;
+    float lumaSS = lumaS + rgbyM.w;
+    bool pairN = abs(gradientN) >= abs(gradientS);
+    float gradient = max(abs(gradientN), abs(gradientS));
+    if(pairN) lengthSign = -lengthSign;
+    float subpixC = clamp(abs(subpixB) * subpixRcpRange, 0.0, 1.0);
+    vec2 posB;
+    posB.x = posM.x;
+    posB.y = posM.y;
+    vec2 offNP;
+    offNP.x = (!horzSpan) ? 0.0 : fxaaQualityRcpFrame.x;
+    offNP.y = ( horzSpan) ? 0.0 : fxaaQualityRcpFrame.y;
+    if(!horzSpan) posB.x += lengthSign * 0.5;
+    if( horzSpan) posB.y += lengthSign * 0.5;
+    vec2 posN;
+    posN.x = posB.x - offNP.x * 1.0;
+    posN.y = posB.y - offNP.y * 1.0;
+    vec2 posP;
+    posP.x = posB.x + offNP.x * 1.0;
+    posP.y = posB.y + offNP.y * 1.0;
+    float subpixD = ((-2.0)*subpixC) + 3.0;
+    float lumaEndN = FxaaLuma(texture2D(texLuma, posN));
+    float subpixE = subpixC * subpixC;
+    float lumaEndP = FxaaLuma(texture2D(texLuma, posP));
+    if(!pairN) lumaNN = lumaSS;
+    float gradientScaled = gradient * 1.0/4.0;
+    float lumaMM = rgbyM.w - lumaNN * 0.5;
+    float subpixF = subpixD * subpixE;
+    bool lumaMLTZero = lumaMM < 0.0;
+    lumaEndN -= lumaNN * 0.5;
+    lumaEndP -= lumaNN * 0.5;
+    bool doneN = abs(lumaEndN) >= gradientScaled;
+    bool doneP = abs(lumaEndP) >= gradientScaled;
+    if(!doneN) posN.x -= offNP.x * 1.5;
+    if(!doneN) posN.y -= offNP.y * 1.5;
+    bool doneNP = (!doneN) || (!doneP);
+    if(!doneP) posP.x += offNP.x * 1.5;
+    if(!doneP) posP.y += offNP.y * 1.5;
+    if(doneNP) {
+        if(!doneN) lumaEndN = FxaaLuma(texture2D(texLuma, posN.xy));
+        if(!doneP) lumaEndP = FxaaLuma(texture2D(texLuma, posP.xy));
+        if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+        if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+        doneN = abs(lumaEndN) >= gradientScaled;
+        doneP = abs(lumaEndP) >= gradientScaled;
+        if(!doneN) posN.x -= offNP.x * 2.0;
+        if(!doneN) posN.y -= offNP.y * 2.0;
+        doneNP = (!doneN) || (!doneP);
+        if(!doneP) posP.x += offNP.x * 2.0;
+        if(!doneP) posP.y += offNP.y * 2.0;
+        if(doneNP) {
+            if(!doneN) lumaEndN = FxaaLuma(texture2D(texLuma, posN.xy));
+            if(!doneP) lumaEndP = FxaaLuma(texture2D(texLuma, posP.xy));
+            if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+            if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+            doneN = abs(lumaEndN) >= gradientScaled;
+            doneP = abs(lumaEndP) >= gradientScaled;
+            if(!doneN) posN.x -= offNP.x * 4.0;
+            if(!doneN) posN.y -= offNP.y * 4.0;
+            doneNP = (!doneN) || (!doneP);
+            if(!doneP) posP.x += offNP.x * 4.0;
+            if(!doneP) posP.y += offNP.y * 4.0;
+            if(doneNP) {
+                if(!doneN) lumaEndN = FxaaLuma(texture2D(texLuma, posN.xy));
+                if(!doneP) lumaEndP = FxaaLuma(texture2D(texLuma, posP.xy));
+                if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
+                if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
+                doneN = abs(lumaEndN) >= gradientScaled;
+                doneP = abs(lumaEndP) >= gradientScaled;
+                if(!doneN) posN.x -= offNP.x * 12.0;
+                if(!doneN) posN.y -= offNP.y * 12.0;
+                doneNP = (!doneN) || (!doneP);
+                if(!doneP) posP.x += offNP.x * 12.0;
+                if(!doneP) posP.y += offNP.y * 12.0;
+            }
+        }
+    }
+    float dstN = posM.x - posN.x;
+    float dstP = posP.x - posM.x;
+    if(!horzSpan) dstN = posM.y - posN.y;
+    if(!horzSpan) dstP = posP.y - posM.y;
+    bool goodSpanN = (lumaEndN < 0.0) != lumaMLTZero;
+    float spanLength = (dstP + dstN);
+    bool goodSpanP = (lumaEndP < 0.0) != lumaMLTZero;
+    float spanLengthRcp = 1.0/spanLength;
+    bool directionN = dstN < dstP;
+    float dstMin = min(dstN, dstP);
+    bool goodSpan = directionN ? goodSpanN : goodSpanP;
+    float subpixG = subpixF * subpixF;
+    float pixelOffset = (dstMin * (-spanLengthRcp)) + 0.5;
+    float subpixH = subpixG * fxaaQualitySubpix;
+    float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
+    float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
+    if(!horzSpan) posM.x += pixelOffsetSubpix * lengthSign;
+    if( horzSpan) posM.y += pixelOffsetSubpix * lengthSign;
+        return vec4(texture2D(tex, posM).xyz, rgbyM.w);
 }
 
-vec4 PostFX(sampler2D tex, vec2 uv, float time)
-{
-  vec4 c = vec4(0.0);
-  vec2 rcpFrame = u_texture_size.xy;
-  c.rgb = FxaaPixelShader(v_pos_pos, tex, rcpFrame);
-  //c.rgb = 1.0 - texture2D(tex, posPos.xy).rgb;
-  c.a = 1.0;
-  return c;
-}
-
-void main()
-{
-  vec2 uv = v_pos_pos.st;
-  gl_FragColor = PostFX(u_texture, uv, 0.0);
+void main() {
+    gl_FragColor = FxaaPixelShader(v_pos, vec4(0.0), u_texture, u_texture, u_texture, u_texture,
+        u_texture_size.xy, vec4(0.0), vec4(0.0), vec4(0.0), 0.75, 0.166, 0.0833,
+        8.0, 0.125, 0.05, vec4(0.0));
+    gl_FragColor.a = 1.0;
 }
 </fragment>
