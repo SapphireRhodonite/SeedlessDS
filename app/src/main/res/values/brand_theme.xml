@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Seedless.Launcher" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/seedless_launch_background</item>
+    </style>
+</resources>

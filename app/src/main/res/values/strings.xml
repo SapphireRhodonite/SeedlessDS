@@ -810,4 +810,11 @@
     <string name="tools_no_valid_bios_recognized_check_the_size">"No valid BIOS recognized (check the size)."</string>
     <string name="ui_nav">"NAV"</string>
     <string name="unknown_symbol" translatable="false">"?"</string>
+    <string name="licenses_title">Licenses and acknowledgements</string>
+    <string name="settings_licenses">Licenses</string>
+    <string name="settings_licenses_summary">Project and third-party notices</string>
+    <string name="licenses_load_error">Unable to load license notices.</string>
+    <string name="settings_use_alt_app_icon">Use alt app icon</string>
+    <string name="settings_alt_app_icon_summary">Use the smiling watermelon on your home screen.</string>
+    <string name="settings_alt_app_icon_error">Could not change the app icon. Try again.</string>
 </resources>

@@ -9,6 +9,7 @@ object RaNative {
     init { System.loadLibrary("seedless_bridge") }
 
     external fun raInit(): Boolean
+    external fun raSetHost(host: String?)
     external fun raLoginPassword(user: String, pass: String)
     external fun raLoginToken(user: String, token: String)
     external fun raServerResponse(handle: Long, status: Int, body: ByteArray?)

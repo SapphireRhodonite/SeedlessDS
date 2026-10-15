@@ -1,0 +1,26 @@
+HQ2X filter — guest(r) 2xGLSLHqFilter / 2xScaleHQ
+
+/*
+   2xGLSLHqFilter shader
+   
+   Copyright (C) 2005 guest(r) - guest.r@gmail.com
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+Upstream: https://github.com/libretro/glsl-shaders/blob/148ce728155232a6b63be772c1810bd84728f359/scalehq/shaders/2xScaleHQ.glsl
+Original source in the corresponding-source archive: resources/tools/assets/shader-origins/hq2x/2xScaleHQ.glsl
+
+The bundled hq2x.dsd adapts this shader to the SeedlessDS GLES interface. Its epsilon is 0.001 instead of 0.0001; coordinate setup, texture swizzles and output assignment also differ. The filter is not Maxim Stepin's separate hqx implementation. See GPL-2.0 for the license text.

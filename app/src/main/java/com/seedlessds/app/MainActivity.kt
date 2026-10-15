@@ -32,6 +32,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            splashScreen.setOnExitAnimationListener { it.remove() }
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
@@ -42,33 +45,36 @@ class MainActivity : ComponentActivity() {
             isAppearanceLightStatusBars = !dark
             isAppearanceLightNavigationBars = !dark
         }
+        val alternativeIcon = LauncherIcon.isAlternative(this)
         setContent {
             SeedlessTheme {
-                val folderPicker = rememberLauncherForActivityResult(
-                    ActivityResultContracts.OpenDocumentTree()
-                ) { uri -> if (uri != null) { RomLibrary.addFolder(this, uri); refresh.intValue++ } }
+                com.seedlessds.app.emu.SeedlessLaunchIntro(enabled = savedInstanceState == null, alternative = alternativeIcon) {
+                    val folderPicker = rememberLauncherForActivityResult(
+                        ActivityResultContracts.OpenDocumentTree()
+                    ) { uri -> if (uri != null) { RomLibrary.addFolder(this, uri); refresh.intValue++ } }
 
-                val singlePicker = rememberLauncherForActivityResult(
-                    ActivityResultContracts.OpenDocument()
-                ) { uri -> if (uri != null) launchRom(uri, uri.lastPathSegment ?: "game.nds", takePerm = true, loadSlot = -1) }
+                    val singlePicker = rememberLauncherForActivityResult(
+                        ActivityResultContracts.OpenDocument()
+                    ) { uri -> if (uri != null) launchRom(uri, uri.lastPathSegment ?: "game.nds", takePerm = true, loadSlot = -1) }
 
-                var inSettings by remember { mutableStateOf(false) }
-                var settingsGameKey by remember { mutableStateOf<String?>(null) }
+                    var inSettings by remember { mutableStateOf(false) }
+                    var settingsGameKey by remember { mutableStateOf<String?>(null) }
 
-                if (inSettings) {
-                    SettingsHost(gameKey = settingsGameKey) { inSettings = false }
-                } else {
-                    LibraryScreen(
-                        refreshKey = refresh.intValue,
-                        onPlayNew = { entry ->
-                            RomLibrary.markPlayed(this, entry)
-                            launchRom(entry.uri, entry.name, takePerm = false, loadSlot = -1)
-                        },
-                        onGameSettings = { entry -> settingsGameKey = entry.title; inSettings = true },
-                        onGlobalSettings = { settingsGameKey = null; inSettings = true },
-                        onAddFolder = { folderPicker.launch(null) },
-                        onOpenSingle = { singlePicker.launch(arrayOf("*/*")) },
-                    )
+                    if (inSettings) {
+                        SettingsHost(gameKey = settingsGameKey) { inSettings = false }
+                    } else {
+                        LibraryScreen(
+                            refreshKey = refresh.intValue,
+                            onPlayNew = { entry ->
+                                RomLibrary.markPlayed(this, entry)
+                                launchRom(entry.uri, entry.name, takePerm = false, loadSlot = -1)
+                            },
+                            onGameSettings = { entry -> settingsGameKey = entry.title; inSettings = true },
+                            onGlobalSettings = { settingsGameKey = null; inSettings = true },
+                            onAddFolder = { folderPicker.launch(null) },
+                            onOpenSingle = { singlePicker.launch(arrayOf("*/*")) },
+                        )
+                    }
                 }
             }
         }

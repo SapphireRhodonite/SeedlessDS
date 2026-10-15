@@ -1,0 +1,11 @@
+Libretro Nintendo DS cover images and filename index
+
+Source: https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%20DS/Named_Boxarts/
+Repository: https://github.com/libretro-thumbnails/Nintendo_-_Nintendo_DS
+
+SeedlessDS includes a filename index and downloads selected cover images on demand when the cover-art option is enabled. The APK does not include a cover-image collection.
+
+Cover artwork belongs to its respective rights holders. No GPL license or blanket reuse permission for the index or images is asserted here. Libretro-database is a separate project; its license is not assigned to libretro-thumbnails. The libretro maintainers describe the collection and recommend downloading images as needed at:
+https://github.com/libretro-thumbnails/libretro-thumbnails/issues/6#issuecomment-534657710
+
+This notice attributes the service and describes the current download behavior; it is not a grant of image rights.

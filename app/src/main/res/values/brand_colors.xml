@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="seedless_icon_default_background">#62BAB9</color>
+    <color name="seedless_icon_alt_background">#EEA336</color>
+    <color name="seedless_launch_background">#F4F3F0</color>
+</resources>

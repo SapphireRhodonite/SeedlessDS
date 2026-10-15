@@ -1,9 +1,17 @@
 package com.seedlessds.app.emu
 
 import com.seedlessds.app.R
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import kotlin.math.roundToInt
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -38,19 +45,27 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+internal fun ImageBitmap.seedlessLogoBounds() = IntRect(
+    (width * (88f / 2048f)).roundToInt(),
+    (height * (818f / 2048f)).roundToInt(),
+    (width * (1941f / 2048f)).roundToInt(),
+    (height * (1726f / 2048f)).roundToInt(),
+)
+
 @Composable
 fun SeedlessLogo(
     modifier: Modifier = Modifier,
-    slabWidth: Dp = 17.dp,
-    slabHeight: Dp = 11.dp,
+    width: Dp = 38.dp,
 ) {
-    val colors = seedless
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Box(Modifier.size(slabWidth, slabHeight).clip(RoundedCornerShape(3.dp)).background(colors.red))
-        Box(Modifier.size(slabWidth, slabHeight).clip(RoundedCornerShape(3.dp)).background(colors.green))
+    val image = ImageBitmap.imageResource(R.drawable.seedless_library)
+    val bounds = image.seedlessLogoBounds()
+    Canvas(modifier.size(width, width * (908f / 1853f))) {
+        drawImage(
+            image,
+            srcOffset = bounds.topLeft,
+            srcSize = bounds.size,
+            dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+        )
     }
 }
 
@@ -81,7 +96,10 @@ fun SeedlessBrandHeader(
 ) {
     val colors = seedless
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-        SeedlessLogo()
+        val intro = LocalBrandIntroTarget.current
+        SeedlessLogo(Modifier
+            .onGloballyPositioned { intro?.bounds = it.boundsInRoot() }
+            .alpha(if (intro == null) 1f else 0f))
         Spacer(Modifier.width(10.dp))
         Column {
             SeedlessWordmark()

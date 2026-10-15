@@ -36,6 +36,7 @@ class DsGlView(context: Context) : SurfaceView(context) {
     @Volatile private var autofireMask = 0
 
     private fun pushInput() {
+        if (thread.isClosing()) return
         SeedlessCore.input(padState or (if (touchActive) 0x80000000.toInt() else 0), touchPacked, autofireMask)
     }
 
@@ -90,15 +91,16 @@ class DsGlView(context: Context) : SurfaceView(context) {
 
     fun queueEvent(work: Runnable) = thread.post(work)
 
-    fun onPause() {
-        SeedlessCore.signalScreen()
-        thread.setPaused(true)
-    }
+    fun onPause() = thread.setPaused(true)
 
     fun onResume() = thread.setPaused(false)
 
+    fun stopRendering() = thread.requestShutdown()
+
+    fun awaitRenderingStopped() = thread.awaitStopped()
+
     override fun onDetachedFromWindow() {
-        thread.shutdown()
+        thread.requestShutdown()
         super.onDetachedFromWindow()
     }
 
@@ -123,13 +125,15 @@ class DsGlView(context: Context) : SurfaceView(context) {
         private var started = false
 
         fun onSurfaceReady(surface: Surface, w: Int, h: Int) = synchronized(lock) {
+            if (exiting) return@synchronized
             pending = surface; pendingW = w; pendingH = h; surfaceChanged = true
             lock.notifyAll()
         }
 
         fun onSurfaceGone() {
-            SeedlessCore.signalScreen()
             synchronized(lock) {
+                if (exiting) return
+                SeedlessCore.signalScreen()
                 pending = null
                 dropWindow = true
                 lock.notifyAll()
@@ -141,22 +145,41 @@ class DsGlView(context: Context) : SurfaceView(context) {
         }
 
         fun setPaused(value: Boolean) = synchronized(lock) {
+            if (exiting) return@synchronized
             paused = value
+            if (value) SeedlessCore.signalScreen()
             lock.notifyAll()
         }
 
         fun post(work: Runnable) = synchronized(lock) {
+            if (exiting) return@synchronized
             events.addLast(work)
             lock.notifyAll()
         }
 
-        fun shutdown() {
+        fun isClosing(): Boolean = synchronized(lock) { exiting }
+
+        fun requestShutdown() = synchronized(lock) {
+            if (exiting) return@synchronized
+            exiting = true
+            events.clear()
             SeedlessCore.signalScreen()
-            synchronized(lock) { exiting = true; lock.notifyAll() }
-            runCatching { join(1000) }
+            lock.notifyAll()
+        }
+
+        fun awaitStopped() {
+            requestShutdown()
+            while (isAlive) {
+                SeedlessCore.signalScreen()
+                join(50)
+            }
         }
 
         override fun run() {
+            try { renderLoop() } finally { renderer.shutdown(); teardown() }
+        }
+
+        private fun renderLoop() {
             while (true) {
                 var surface: Surface? = null
                 var w = 0
@@ -166,7 +189,7 @@ class DsGlView(context: Context) : SurfaceView(context) {
                 synchronized(lock) {
                     while (true) {
                         if (dropWindow) { destroyWindow(); dropWindow = false; lock.notifyAll() }
-                        if (exiting) { teardown(); return }
+                        if (exiting) return
                         if (!paused && pending != null) {
                             surface = pending; w = pendingW; h = pendingH
                             fresh = surfaceChanged; surfaceChanged = false
@@ -327,6 +350,11 @@ class DsGlView(context: Context) : SurfaceView(context) {
 
         private var texPages = 0
         private var fboPages = 0
+
+        fun shutdown() {
+            externalThread?.terminate()
+            externalThread = null
+        }
 
         fun created(config: EGLConfig?) {
             ringForget()

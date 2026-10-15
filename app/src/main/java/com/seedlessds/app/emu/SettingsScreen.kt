@@ -1,6 +1,11 @@
 package com.seedlessds.app.emu
 
 import com.seedlessds.app.R
+import com.seedlessds.app.LauncherIcon
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +36,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Monitor
 import androidx.compose.material.icons.rounded.Movie
@@ -130,6 +136,7 @@ private fun settingsCategories(uiContext: android.content.Context) = listOf(
     Cat(Icons.Rounded.Save, uiContext.getString(R.string.settings_saves_and_states), uiContext.getString(R.string.settings_autosave_autoload_confirmations)),
     Cat(Icons.Rounded.Tune, uiContext.getString(R.string.settings_advanced), uiContext.getString(R.string.settings_performance_cheats_bios_data)),
     Cat(Icons.Rounded.EmojiEvents, uiContext.getString(R.string.common_retroachievements_2), uiContext.getString(R.string.settings_login_achievements_notifications_encore)),
+    Cat(Icons.Rounded.Description, uiContext.getString(R.string.settings_licenses), uiContext.getString(R.string.settings_licenses_summary)),
 )
 
 private val SettingsMaxWidth = 680.dp
@@ -190,6 +197,14 @@ fun SettingsScreen(
     androidx.activity.compose.BackHandler {
         if (subPage != null) subPage = null
         else if (openCat >= 0) { lastCat = openCat; openCat = -1 } else leave()
+    }
+
+    if (openCat == 9) {
+        LicensesScreen {
+            lastCat = openCat
+            openCat = -1
+        }
+        return
     }
 
     if (wifiDialog) SeedlessConfirmDialog(
@@ -306,7 +321,7 @@ fun SettingsScreen(
                         4 -> AudioSettings(s, setS)
                         5 -> SystemSettings(s, setS)
                         6 -> SaveSettings(s, setS)
-                        7 -> AdvancedSettings(s, setS, { wifiDialog = true }, { onSave(s); onOpenSystemTools() })
+                        7 -> AdvancedSettings(s, setS, !perGame, { wifiDialog = true }, { onSave(s); onOpenSystemTools() })
                         8 -> RaCategory()
                     }
                     }
@@ -659,7 +674,8 @@ fun SettingsScreen(
 }
 
 @Composable private fun AdvancedSettings(
-    s: DsSettings, set: (DsSettings) -> Unit, openWifi: () -> Unit, openTools: () -> Unit
+    s: DsSettings, set: (DsSettings) -> Unit, globalSettings: Boolean,
+    openWifi: () -> Unit, openTools: () -> Unit
 ) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
     val ctx = LocalContext.current
@@ -718,6 +734,28 @@ fun SettingsScreen(
     Group(uiContext.getString(R.string.settings_system))
     NavRow(uiContext.getString(R.string.common_system_tools), uiContext.getString(R.string.settings_install_ds_bios_export_data), openTools)
     NavRow(uiContext.getString(R.string.settings_multiplayer_wifi), uiContext.getString(R.string.settings_local_multiplayer_status), openWifi)
+
+    if (globalSettings) {
+        var alternative by remember { mutableStateOf(LauncherIcon.isAlternative(ctx)) }
+        var changing by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
+        Group(uiContext.getString(R.string.settings_appearance))
+        SwitchRow(uiContext.getString(R.string.settings_use_alt_app_icon),
+            uiContext.getString(R.string.settings_alt_app_icon_summary), alternative, enabled = !changing) { value ->
+            changing = true
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) { LauncherIcon.setAlternative(ctx, value) }
+                    alternative = LauncherIcon.isAlternative(ctx)
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    android.widget.Toast.makeText(ctx, R.string.settings_alt_app_icon_error, android.widget.Toast.LENGTH_SHORT).show()
+                } finally {
+                    changing = false
+                }
+            }
+        }
+    }
 }
 
 @Composable private fun RaCategory() {

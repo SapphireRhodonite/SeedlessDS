@@ -93,6 +93,7 @@ class ExternalInfoPresentation(
 class ExternalInfoController(private val activity: ComponentActivity) {
 
     private var presentation: ExternalInfoPresentation? = null
+    private var attached = false
     private var currentContent: (@Composable () -> Unit)? = null
 
     private val displayManager: DisplayManager
@@ -105,11 +106,14 @@ class ExternalInfoController(private val activity: ComponentActivity) {
     }
 
     fun attach() {
+        if (attached) return
+        attached = true
         displayManager.registerDisplayListener(displayListener, null)
         refresh()
     }
 
     fun detach() {
+        attached = false
         runCatching { displayManager.unregisterDisplayListener(displayListener) }
         presentation?.dismiss()
         presentation = null
@@ -124,6 +128,7 @@ class ExternalInfoController(private val activity: ComponentActivity) {
         d.state == Display.STATE_ON && (d.flags and Display.FLAG_PRIVATE) == 0
 
     private fun refresh() {
+        if (!attached) return
         val display = displayManager
             .getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
             .firstOrNull { isRealDisplay(it) }
@@ -148,7 +153,7 @@ fun ExternalIdleInfo() {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize(),
     ) {
-        SeedlessLogo(slabWidth = 34.dp, slabHeight = 22.dp)
+        SeedlessLogo(width = 84.dp)
         Spacer(Modifier.height(16.dp))
         SeedlessWordmark(fontSize = 34.sp)
     }

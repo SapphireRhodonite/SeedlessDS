@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.util.Xml
+import com.seedlessds.app.BuildConfig
 import com.seedlessds.app.emu.DsSettings
 import com.seedlessds.app.emu.EmuAssets
 import com.seedlessds.app.emu.EmulatorActivity
@@ -40,6 +41,7 @@ object RuntimeControl {
     val active: Boolean get() = session != null && !ended
 
     fun attach(value: EmulatorActivity) {
+        if (BuildConfig.FRAME_CONTROLS && !active) NativeControl.begin(-1, false, -1)
         activity = WeakReference(value)
         running = true
     }
@@ -54,6 +56,8 @@ object RuntimeControl {
             nativeDelivery = true
             PathCache.setDataRoot(null)
             SettingsRepo.load(value)
+        } else if (BuildConfig.FRAME_CONTROLS) {
+            NativeControl.end()
         }
         activity.clear()
         running = false
@@ -208,11 +212,17 @@ object RuntimeControl {
     }
 
     fun status(): JSONObject {
+        var pageScale = 0
+        onMain {
+            val owner = activity.get()
+            if (owner != null && !owner.isClosing)
+                pageScale = runCatching { SeedlessCore.pageScale() }.getOrDefault(0)
+        }
         val result = JSONObject().put("session", session ?: JSONObject.NULL)
             .put("running", running).put("lifecycle_paused", lifecyclePaused)
             .put("capture", captureName ?: JSONObject.NULL).put("audio", audioName ?: JSONObject.NULL)
             .put("scale", SettingsRepo.coreScale).put("requested_scale", SettingsRepo.scaleRequested())
-            .put("page_scale", runCatching { SeedlessCore.pageScale() }.getOrDefault(0))
+            .put("page_scale", pageScale)
             .put("threads_3d", SettingsRepo.threadCount).put("pid", android.os.Process.myPid())
             .put("dispatch_probe_available", SettingsRepo.coreScale > 1)
             .put("volume", SettingsRepo.current.volume).put("sound", SettingsRepo.current.soundEnabled)
@@ -228,6 +238,7 @@ object RuntimeControl {
     }
 
     fun command(ctx: Context, command: String, args: JSONObject): JSONObject {
+        if (command == "STATUS" && BuildConfig.FRAME_CONTROLS && running) return status()
         if (command == "SESSION") begin(ctx, args)
         else {
             check(session != null && (command == "STATUS" || active)) { "No active control session" }

@@ -225,6 +225,17 @@ Java_com_seedlessds_app_ra_RaNative_raInit(JNIEnv *env, jobject thiz) {
 }
 
 JNIEXPORT void JNICALL
+Java_com_seedlessds_app_ra_RaNative_raSetHost(JNIEnv *env, jclass c, jstring host) {
+    (void) c;
+    if (!g_client) return;
+    if (!host) { rc_client_set_host(g_client, ""); return; }
+    const char *h = (*env)->GetStringUTFChars(env, host, NULL);
+    if (!h) return;
+    rc_client_set_host(g_client, h);
+    (*env)->ReleaseStringUTFChars(env, host, h);
+}
+
+JNIEXPORT void JNICALL
 Java_com_seedlessds_app_ra_RaNative_raLoginPassword(JNIEnv *env, jclass c, jstring user, jstring pass) {
     (void) c;
     if (!g_client) return;

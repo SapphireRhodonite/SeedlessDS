@@ -4,3 +4,4 @@
 [submodule "core"]
 	path = core
 	url = https://github.com/SapphireRhodonite/SeedlessDS-Core.git
+	branch = mainSub
