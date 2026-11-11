@@ -18,6 +18,11 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 
 object ExternalSurface {
+    internal data class Geometry(val width: Int, val height: Int, val generation: Int, val intervalNs: Long = 0L)
+
+    @Volatile internal var geometry: Geometry? = null
+        private set
+
     class Snap(val surface: Surface, val width: Int, val height: Int, val generation: Int,
                val control: android.view.SurfaceControl? = null)
 
@@ -33,12 +38,14 @@ object ExternalSurface {
 
     @Volatile var attached = false
 
-    fun publish(s: Surface, w: Int, h: Int, c: android.view.SurfaceControl? = null) = synchronized(lock) {
+    fun publish(s: Surface, w: Int, h: Int, c: android.view.SurfaceControl? = null, intervalNs: Long = 0L) = synchronized(lock) {
         surface = s; width = w; height = h; generation++; active = true; control = c
+        geometry = Geometry(w, h, generation, intervalNs)
     }
 
     fun clear() = synchronized(lock) {
         surface = null; width = 0; height = 0; generation++; active = false; control = null
+        geometry = null
     }
 
     fun <T> withSurface(block: (Snap?) -> T): T = synchronized(lock) {
@@ -95,9 +102,11 @@ object ExternalLayout {
     }
 }
 
-class ExtSurfaceView(context: Context) : SurfaceView(context) {
+class ExtSurfaceView(context: Context, private val lowLatency: Boolean) : SurfaceView(context) {
 
     @Volatile var touchSink: ((Boolean, Int) -> Unit)? = null
+
+    private val stylusInput = StylusInput { active, packed -> touchSink?.invoke(active, packed) }
 
     val screenRectPx: FloatArray get() = ExternalLayout.rect(width, height)
 
@@ -105,30 +114,36 @@ class ExtSurfaceView(context: Context) : SurfaceView(context) {
         holder.setFormat(PixelFormat.RGB_565)
         holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(h: SurfaceHolder) {}
-            override fun surfaceChanged(h: SurfaceHolder, format: Int, w: Int, hh: Int) =
+            override fun surfaceChanged(h: SurfaceHolder, format: Int, w: Int, hh: Int) {
+                val rate = display?.refreshRate ?: 0f
+                val interval = if (rate.isFinite() && rate > 0f) (1_000_000_000.0 / rate).toLong() else 0L
                 ExternalSurface.publish(h.surface, w, hh,
-                    if (android.os.Build.VERSION.SDK_INT >= 29) this@ExtSurfaceView.surfaceControl else null)
+                    if (android.os.Build.VERSION.SDK_INT >= 29) this@ExtSurfaceView.surfaceControl else null, interval)
+            }
             override fun surfaceDestroyed(h: SurfaceHolder) = ExternalSurface.clear()
         })
         keepScreenOn = true
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val sink = touchSink ?: return false
-        if (SettingsRepo.current.extDisplayScreen and 1 != 1) return false
-        val r = screenRectPx
-        if (r[2] <= 0f || r[3] <= 0f) return false
+        if (touchSink == null || SettingsRepo.current.extDisplayScreen and 1 != 1) {
+            stylusInput.cancel()
+            return false
+        }
+        val rect = screenRectPx
+        val index = event.actionIndex
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                val lx = (event.x - r[0]) / r[2]
-                val ly = (event.y - r[1]) / r[3]
-                if (lx in 0f..1f && ly in 0f..1f) {
-                    val dx = (lx * 255f).toInt().coerceIn(0, 255)
-                    val dy = (ly * 191f).toInt().coerceIn(0, 191)
-                    sink(true, (dx shl 16) or dy)
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                val accepted = stylusInput.down(event.getPointerId(index).toLong(), event.getX(index), event.getY(index), rect)
+                if (accepted && lowLatency) requestUnbufferedDispatch(event)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                for (i in 0 until event.pointerCount) {
+                    stylusInput.move(event.getPointerId(i).toLong(), event.getX(i), event.getY(i), rect)
                 }
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> sink(false, 0)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> stylusInput.up(event.getPointerId(index).toLong())
+            MotionEvent.ACTION_CANCEL -> stylusInput.cancel()
         }
         return true
     }
@@ -167,9 +182,10 @@ private class ExtEditOverlay(ctx: Context, private val onTap: () -> Unit) : View
 }
 
 private class DsPresentation(
-    ctx: Context, display: Display, touchSink: ((Boolean, Int) -> Unit)?, onTap: () -> Unit
+    ctx: Context, display: Display, lowLatency: Boolean, cloneFrame: Boolean, touchSink: ((Boolean, Int) -> Unit)?, onTap: () -> Unit
 ) : Presentation(ctx, display) {
-    val glView = ExtSurfaceView(ctx).apply { this.touchSink = touchSink }
+    val glView = ExtSurfaceView(ctx, lowLatency).apply { this.touchSink = touchSink }
+    private val frame = if (cloneFrame) PhantomFrame(ctx) { listOf(glView.screenRectPx) } else null
     private val overlay = ExtEditOverlay(ctx, onTap).apply { glRef = glView; visibility = View.GONE }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -183,6 +199,7 @@ private class DsPresentation(
         }
         val root = FrameLayout(context)
         root.addView(glView, FrameLayout.LayoutParams(-1, -1))
+        frame?.let { root.addView(it, FrameLayout.LayoutParams(-1, -1)) }
         root.addView(overlay, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
         window?.let { w ->
@@ -195,10 +212,10 @@ private class DsPresentation(
         }
     }
     fun setEdit(editing: Boolean, selected: Boolean) = overlay.setState(editing, selected)
-    fun applyDisplaySettings() { overlay.invalidate() }
+    fun applyDisplaySettings() { overlay.invalidate(); frame?.invalidate() }
 }
 
-class ExternalDisplayManager(private val ctx: Context) {
+class ExternalDisplayManager(private val ctx: Context, private val lowLatency: Boolean, private val cloneFrame: Boolean = false) {
     private val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private var presentation: DsPresentation? = null
     private var started = false
@@ -250,7 +267,7 @@ class ExternalDisplayManager(private val ctx: Context) {
         if (disp == null) { dismiss(); return }
         if (presentation?.display?.displayId == disp.displayId) return
         dismiss()
-        presentation = DsPresentation(ctx, disp, touchSink) { onTap?.invoke() }.also {
+        presentation = DsPresentation(ctx, disp, lowLatency, cloneFrame, touchSink) { onTap?.invoke() }.also {
             runCatching { it.show() }; it.setEdit(editing, extSelected)
         }
     }

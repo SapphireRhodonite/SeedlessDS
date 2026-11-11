@@ -30,7 +30,7 @@ Java_com_seedlessds_core_SeedlessCore_fxSetup(JNIEnv *env, jclass cls, jint sour
                  (int)viewWidth, (int)viewHeight);
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jlong JNICALL
 Java_com_seedlessds_core_SeedlessCore_fxRender(JNIEnv *env, jclass cls, jint textureTop,
                                                jint textureBottom, jint vertexTop,
                                                jint vertexBottom, jint vertexIntermediate,
@@ -55,6 +55,7 @@ Java_com_seedlessds_core_SeedlessCore_fxRender(JNIEnv *env, jclass cls, jint tex
     frame.flag = (flag != JNI_FALSE);
 
     nds_fx_render(seedless_core(), &frame);
+    return (jlong)nds_fx_frame_token(seedless_core());
 }
 
 JNIEXPORT jint JNICALL

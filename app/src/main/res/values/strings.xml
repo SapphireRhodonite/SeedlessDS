@@ -441,6 +441,8 @@
     <string name="settings_autosave_autoload_confirmations">"Autosave, autoload, confirmations"</string>
     <string name="settings_avoids_skipping_frames_that_would_cause">"Avoids skipping frames that would cause visual glitches."</string>
     <string name="settings_behavior">"Behavior"</string>
+    <string name="settings_low_latency">"Low input latency"</string>
+    <string name="settings_low_latency_description">"Reduces touchscreen latency and may use more CPU. Applies when you open the next game."</string>
     <string name="settings_birthday">"Birthday"</string>
     <string name="settings_blends_frames_to_smooth_the_flicker_of_some">"Blends frames to smooth the flicker of some effects."</string>
     <string name="settings_bottom_only">"Bottom only"</string>
@@ -506,7 +508,7 @@
     <string name="settings_firmware_birthday_some_games_use_it_month_and">"Firmware birthday (some games use it). Month and day."</string>
     <string name="settings_firmware_language_some_games_read_it">"Firmware language (some games read it)."</string>
     <string name="settings_firmware_nickname_language_color_rtc">"Firmware: nickname, language, color, RTC"</string>
-    <string name="settings_forces_the_game_s_main_screen_to_always_be">"Forces the game\'s main screen to always be the top one."</string>
+    <string name="settings_forces_the_game_s_main_screen_to_always_be">"Overrides screen switching requested by the game. May cause flickering or overlapping images. Leave off for normal playback."</string>
     <string name="settings_fps_mode">"FPS mode"</string>
     <string name="settings_fps_with_transparent_background">"FPS with transparent background"</string>
     <string name="settings_framerate_stabilizer">"Framerate stabilizer"</string>
@@ -552,7 +554,7 @@
     <string name="settings_january">"January"</string>
     <string name="settings_july">"July"</string>
     <string name="settings_june">"June"</string>
-    <string name="settings_keep_main_screen_on_top">"Keep main screen on top"</string>
+    <string name="settings_keep_main_screen_on_top">"Force main graphics engine to top"</string>
     <string name="settings_keeps_the_cpu_at_high_frequency_0_off">"Keeps the CPU at high frequency (0 = off). Increases battery drain."</string>
     <string name="settings_khaki">"Khaki"</string>
     <string name="settings_landscape">"Landscape"</string>

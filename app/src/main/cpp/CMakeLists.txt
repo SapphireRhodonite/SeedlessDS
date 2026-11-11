@@ -40,10 +40,12 @@ target_include_directories(recon_fn PRIVATE
         "${SEEDLESS_CORE_DIR}/third_party/lua")
 target_link_libraries(recon_fn seedless_lua seedless_libarchive seedless_unarr seedless_lzma z)
 include("${SEEDLESS_CORE_DIR}/src/CMakeLists.txt")
+target_sources(recon_fn PRIVATE jni/core_multiplayer.c)
 
 add_library(recon SHARED
         recon_android.c
         jni/core_system.c
+        jni/core_surface.c
         jni/runtime_control.c
         jni/core_frame.c
         jni/core_state.c
@@ -60,4 +62,4 @@ target_compile_options(recon_fn PRIVATE
         -Werror=pointer-sign -Werror=unused-variable -Werror=unused-function -Werror=unused-const-variable)
 target_link_libraries(recon_fn ${log-lib} dl m OpenSLES GLESv2)
 target_link_options(recon_fn PRIVATE -Wl,-Bsymbolic -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384)
-target_link_libraries(recon ${log-lib} dl recon_fn)
+target_link_libraries(recon ${log-lib} dl recon_fn EGL GLESv2 android)

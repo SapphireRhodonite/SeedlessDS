@@ -8,7 +8,7 @@ import java.nio.ByteOrder
 
 
 
-internal class DirectBlit {
+internal class DirectBlit(private val premultipliedAlpha: Boolean = false) {
     private var prog = 0
     private var uTex = 0
     private var vbo = 0
@@ -24,6 +24,12 @@ internal class DirectBlit {
 
     fun forget() { prog = 0; vbo = 0 }
 
+    fun release() {
+        if (prog != 0) GLES20.glDeleteProgram(prog)
+        if (vbo != 0) GLES20.glDeleteBuffers(1, intArrayOf(vbo), 0)
+        forget()
+    }
+
 
 
     fun draw(tex: Int, r: FloatArray, surfaceH: Int, flipY: Boolean = true) {
@@ -36,12 +42,25 @@ internal class DirectBlit {
         GLES20.glGetIntegerv(GLES20.GL_ARRAY_BUFFER_BINDING, i1, 0); val vboPrev = i1[0]
         GLES20.glGetIntegerv(GLES20.GL_VIEWPORT, vp, 0)
         val blendPrev = GLES20.glIsEnabled(GLES20.GL_BLEND)
+        val blendState = if (premultipliedAlpha) IntArray(6).also { state ->
+            GLES20.glGetIntegerv(GLES20.GL_BLEND_SRC_RGB, state, 0)
+            GLES20.glGetIntegerv(GLES20.GL_BLEND_DST_RGB, state, 1)
+            GLES20.glGetIntegerv(GLES20.GL_BLEND_SRC_ALPHA, state, 2)
+            GLES20.glGetIntegerv(GLES20.GL_BLEND_DST_ALPHA, state, 3)
+            GLES20.glGetIntegerv(GLES20.GL_BLEND_EQUATION_RGB, state, 4)
+            GLES20.glGetIntegerv(GLES20.GL_BLEND_EQUATION_ALPHA, state, 5)
+        } else null
 
         val vw = r[2].toInt().coerceAtLeast(1)
         val vh = r[3].toInt().coerceAtLeast(1)
         val vy = (surfaceH - (r[1].toInt() + vh)).coerceAtLeast(0)
         GLES20.glViewport(r[0].toInt(), vy, vw, vh)
-        GLES20.glDisable(GLES20.GL_BLEND)
+        if (premultipliedAlpha) {
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendEquationSeparate(GLES20.GL_FUNC_ADD, GLES20.GL_FUNC_ADD)
+            GLES20.glBlendFuncSeparate(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA,
+                GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        } else GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glUseProgram(prog)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex)
         GLES20.glUniform1i(uTex, 0)
@@ -58,7 +77,12 @@ internal class DirectBlit {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texPrev)
         GLES20.glActiveTexture(unitPrev)
         GLES20.glUseProgram(progPrev)
+        blendState?.let {
+            GLES20.glBlendFuncSeparate(it[0], it[1], it[2], it[3])
+            GLES20.glBlendEquationSeparate(it[4], it[5])
+        }
         if (blendPrev) GLES20.glEnable(GLES20.GL_BLEND)
+        else if (premultipliedAlpha) GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glViewport(vp[0], vp[1], vp[2], vp[3])
     }
 
@@ -73,7 +97,8 @@ internal class DirectBlit {
                 "void main(){ vTex = aTex; gl_Position = vec4(aPos, 0.0, 1.0); }")
         val fs = compile(GLES20.GL_FRAGMENT_SHADER,
             "precision mediump float; varying vec2 vTex; uniform sampler2D uTex;" +
-                "void main(){ gl_FragColor = vec4(texture2D(uTex, vTex).rgb, 1.0); }")
+                if (premultipliedAlpha) "void main(){ gl_FragColor = texture2D(uTex, vTex); }"
+                else "void main(){ gl_FragColor = vec4(texture2D(uTex, vTex).rgb, 1.0); }")
         val p = GLES20.glCreateProgram()
         GLES20.glAttachShader(p, vs); GLES20.glAttachShader(p, fs)
         GLES20.glBindAttribLocation(p, aPos, "aPos")

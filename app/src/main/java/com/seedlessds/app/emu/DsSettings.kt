@@ -56,6 +56,7 @@ data class DsSettings(
     val extraFunc2: Int = 0,
     val extraFunc3: Int = 0,
     val touchThrough: Boolean = false,
+    val lowLatency: Boolean = false,
     val noDiagonals: Boolean = false,
     val appLogFile: Boolean = false,
     val menuButtonPos: Int = 0,
@@ -115,7 +116,7 @@ data class DsSettings(
         v = v or ((slot2Type.toLong() and 15L) shl 43)
         if (soundEnabled)        v = v or 0x80000000L
         if (showFps)             v = v or 0x40000000L
-        if (SettingsRepo.fastForward) v = v or 0x20000000L
+        if (SettingsRepo.fastForward && !MultiplayerSession.active) v = v or 0x20000000L
         if (threaded3D)          v = v or 0x10000000L
         if (cheatsEnabled)       v = v or 0x8000000L
         if (micEnabled)          v = v or 0x4000000L
@@ -139,7 +140,7 @@ data class DsSettings(
         (firmwareLanguage and 0xFF) or ((firmwareColor and 0xFF) shl 8) or
         ((bdayMonth and 0xFF) shl 16) or ((bdayDay and 0xFF) shl 24)
 
-    fun autosaveInterval(): Int = when (autosaveMode) {
+    fun autosaveInterval(): Int = if (MultiplayerSession.active) 0 else when (autosaveMode) {
         2 -> 300; 3 -> 900; 4 -> 1800; else -> 0
     }
 }
@@ -264,6 +265,7 @@ object SettingsRepo {
             extraFunc2 = p.getInt("_ExtraFuncs_1", d.extraFunc2),
             extraFunc3 = p.getInt("_ExtraFuncs_2", d.extraFunc3),
             touchThrough = p.getBoolean("_TouchThrough", d.touchThrough),
+            lowLatency = p.getBoolean("_LowLatency", d.lowLatency),
             noDiagonals = p.getBoolean("_NoDiagonals", d.noDiagonals),
             appLogFile = p.getBoolean("_AppLogFile", d.appLogFile),
             menuButtonPos = p.getInt("_MenuButtonPos", d.menuButtonPos),
@@ -361,6 +363,7 @@ object SettingsRepo {
             putInt("_ExtraFuncs_1", s.extraFunc2)
             putInt("_ExtraFuncs_2", s.extraFunc3)
             putBoolean("_TouchThrough", s.touchThrough)
+            putBoolean("_LowLatency", s.lowLatency)
             putBoolean("_NoDiagonals", s.noDiagonals)
             putBoolean("_AppLogFile", s.appLogFile)
             putInt("_MenuButtonPos", s.menuButtonPos)
@@ -462,6 +465,7 @@ object SettingsRepo {
         di("_ExtraFuncs_1", s.extraFunc2, b.extraFunc2)
         di("_ExtraFuncs_2", s.extraFunc3, b.extraFunc3)
         db("_TouchThrough", s.touchThrough, b.touchThrough)
+        db("_LowLatency", s.lowLatency, b.lowLatency)
         db("_NoDiagonals", s.noDiagonals, b.noDiagonals)
         db("_AppLogFile", s.appLogFile, b.appLogFile)
         di("_MenuButtonPos", s.menuButtonPos, b.menuButtonPos)

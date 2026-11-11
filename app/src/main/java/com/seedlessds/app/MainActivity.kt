@@ -22,6 +22,7 @@ import com.seedlessds.app.emu.ExternalInfoController
 import com.seedlessds.app.emu.SeedlessTheme
 import com.seedlessds.app.emu.EmulatorActivity
 import com.seedlessds.app.emu.LibraryScreen
+import com.seedlessds.app.emu.MultiplayerActivity
 import com.seedlessds.app.emu.RomLibrary
 import com.seedlessds.app.emu.SettingsHost
 
@@ -73,6 +74,14 @@ class MainActivity : ComponentActivity() {
                             onGlobalSettings = { settingsGameKey = null; inSettings = true },
                             onAddFolder = { folderPicker.launch(null) },
                             onOpenSingle = { singlePicker.launch(arrayOf("*/*")) },
+                            onBootFirmware = {
+                                startActivity(Intent(this, EmulatorActivity::class.java)
+                                    .putExtra(EmulatorActivity.EXTRA_FIRMWARE_BOOT, true))
+                            },
+                            onOpenMultiplayer = { join ->
+                                startActivity(Intent(this, MultiplayerActivity::class.java)
+                                    .putExtra(MultiplayerActivity.EXTRA_JOIN, join))
+                            },
                         )
                     }
                 }
@@ -98,6 +107,9 @@ class MainActivity : ComponentActivity() {
                 }
                 event.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_Y -> {
                     if (LibraryKeyRouter.toggleFavorite?.invoke() == true) return true
+                }
+                event.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_SELECT && event.repeatCount == 0 -> {
+                    if (LibraryKeyRouter.openMultiplayer?.invoke() == true) return true
                 }
             }
             if (MenuKeyRouter.dispatch(event.keyCode)) return true

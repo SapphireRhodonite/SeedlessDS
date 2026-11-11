@@ -9,4 +9,7 @@ object LibraryKeyRouter {
 
     @Volatile
     var toggleFavorite: (() -> Boolean)? = null
+
+    @Volatile
+    var openMultiplayer: (() -> Boolean)? = null
 }

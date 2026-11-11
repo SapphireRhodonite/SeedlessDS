@@ -2,6 +2,7 @@
 #include <jni.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdatomic.h>
 #include <dlfcn.h>
 #include <android/log.h>
 
@@ -172,9 +173,17 @@ JNIEXPORT jboolean JNICALL
 Java_com_seedlessds_app_SeedlessBridge_pagesActive(JNIEnv *env, jclass clazz) { (void)env; (void)clazz; return g_pages_mem ? JNI_TRUE : JNI_FALSE; }
 JNIEXPORT void JNICALL
 Java_com_seedlessds_app_SeedlessBridge_fboDest(JNIEnv *env, jclass clazz, jint fbo) {
-    static void (*f)(unsigned);
+    static _Atomic(void (*)(unsigned)) resolved;
+    void (*f)(unsigned) = atomic_load_explicit(&resolved, memory_order_acquire);
     (void)env; (void)clazz;
-    if (!f) { void *h = dlopen("librecon_fn.so", RTLD_NOW | RTLD_NOLOAD); if (h) f = (void (*)(unsigned))dlsym(h, "recon_present_set_fbo_dest"); }
+    if (!f) {
+        void *h = dlopen("librecon_fn.so", RTLD_NOW | RTLD_NOLOAD);
+        if (h) {
+            f = (void (*)(unsigned))dlsym(h, "recon_present_set_fbo_dest");
+            if (f) atomic_store_explicit(&resolved, f, memory_order_release);
+            dlclose(h);
+        }
+    }
     if (f) f((unsigned)fbo);
 }
 JNIEXPORT jboolean JNICALL

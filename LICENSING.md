@@ -14,7 +14,7 @@ This declaration does not replace third-party notices or relicense their code or
 
 - Native libraries and modifications are listed in [core/third_party/LICENSES.md](core/third_party/LICENSES.md). Rcheevos retains its MIT and per-file notices.
 - The unchanged DeadSkullzJr 20211225 cheat catalog retains its supplied AGPL-3.0, contributor attribution and XML source.
-- The game database derives from melonDS under GPL-3.0-or-later.
+- The game database and adapted DS Wi-Fi/LAN controller derive from melonDS under GPL-3.0-or-later. The local multiplayer transport also includes ENet under MIT.
 - The six GPL-2.0-or-later shaders retain their notices. HQ2X and Scale2X retain the original sources and attribution for their adaptations.
 - FXAA 3.11 retains BSD-3-Clause terms. SMAA retains its upstream MIT terms and binary-notice exception. Quilez uses hunterk's public-domain Image Adjustment interpolation function; the Scanline shader retains Timothy Lottes' public-domain dedication.
 - Replacement BIOS files retain BSD-2-Clause terms. Manrope and Space Grotesk retain OFL-1.1 terms.

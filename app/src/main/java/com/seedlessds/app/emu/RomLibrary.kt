@@ -24,6 +24,8 @@ object RomLibrary {
         val uri: Uri,
         val name: String,
         val folder: Uri? = null,
+        val size: Long? = null,
+        val modified: Long? = null,
     ) {
         val title: String get() = name.substringBeforeLast('.')
     }
@@ -82,6 +84,8 @@ object RomLibrary {
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_SIZE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED,
         )
         for (t in folders(ctx)) {
             val children = runCatching {
@@ -95,7 +99,8 @@ object RomLibrary {
                         if (c.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR) continue
                         if (n.endsWith("-crash.zip", true)) continue
                         if (n.endsWith(".nds", true) || n.endsWith(".zip", true) || n.endsWith(".7z", true) || n.endsWith(".rar", true))
-                            out.add(RomEntry(DocumentsContract.buildDocumentUriUsingTree(t, id), n, t))
+                            out.add(RomEntry(DocumentsContract.buildDocumentUriUsingTree(t, id), n, t,
+                                if (c.isNull(3)) null else c.getLong(3), if (c.isNull(4)) null else c.getLong(4)))
                     }
                 }
             }

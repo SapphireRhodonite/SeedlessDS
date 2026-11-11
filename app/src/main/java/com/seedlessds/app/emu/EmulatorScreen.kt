@@ -12,6 +12,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import android.view.MotionEvent
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.border
 import androidx.compose.material.icons.rounded.DragIndicator
@@ -97,6 +101,21 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.material.icons.rounded.OpenWith
 import androidx.compose.foundation.layout.BoxScope
@@ -131,6 +150,7 @@ fun EmulatorScreen(
     onApplyExternal: () -> Unit = {},
     extTapCount: Int = 0,
     onExtEditState: (Boolean, Boolean) -> Unit = { _, _ -> },
+    playerControls: @Composable () -> Unit = {},
 ) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
     var overlay by remember { mutableStateOf(Overlay.NONE) }
@@ -166,6 +186,7 @@ fun EmulatorScreen(
     var selectedId by remember { mutableStateOf<String?>(null) }
     var rectTick by remember { mutableStateOf(0) }
     var canvasPx by remember { mutableStateOf(IntSize.Zero) }
+    val controlBounds = remember { mutableStateMapOf<String, Rect>() }
     var toolbarOffset by remember { mutableStateOf(androidx.compose.ui.unit.IntOffset.Zero) }
     val hiddenSet = remember {
         mutableStateMapOf<String, Boolean>().apply { ControlLayout.ids.forEach { put(it, ControlLayout.isHidden(it)) } }
@@ -198,6 +219,10 @@ fun EmulatorScreen(
 
     fun dispatchExtra(fn: Int, pressed: Boolean) {
         if (fn == 0) return
+        if (fn in 1..3 && MultiplayerSession.active) {
+            if (!pressed) android.widget.Toast.makeText(ctx, R.string.multiplayer_operation_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
         if (pressed) { if (fn == 7) SeedlessCore.whitenoise(true); return }
         when (fn) {
             1 -> { SettingsRepo.fastForward = !SettingsRepo.fastForward; glView.applyFastForward() }
@@ -230,8 +255,16 @@ fun EmulatorScreen(
 
     Box(Modifier.fillMaxSize().background(Color.Black).onSizeChanged { canvasPx = it }) {
         androidx.compose.ui.viewinterop.AndroidView(
-            factory = { glView }, modifier = Modifier.fillMaxSize()
+            factory = { glView }, modifier = Modifier.fillMaxSize().stylusInput(glView)
         )
+        if (glView.context is PhantomPeerActivity) {
+            androidx.compose.ui.viewinterop.AndroidView(factory = { ctx ->
+                PhantomFrame(ctx) { listOf(glView.topScreenRect, glView.bottomScreenRect) }.also { frame ->
+                    glView.onLcdLayout = frame::postInvalidate
+                }
+            }, modifier = Modifier.fillMaxSize())
+            androidx.compose.runtime.DisposableEffect(glView) { onDispose { glView.onLcdLayout = null } }
+        }
 
         if (overlay == Overlay.NONE) {
             if (editingControls) {
@@ -252,11 +285,16 @@ fun EmulatorScreen(
                 }
             }
             ControlsOverlay(glView, settings, offsets, scales, hiddenSet, selectedId,
-                { selectedId = it }, editingControls, hideControls, ::dispatchExtra) {
+                { selectedId = it }, editingControls, hideControls, ::dispatchExtra,
+                if (glView.lowLatency) controlBounds else null) {
                 if (!editingControls) overlay = Overlay.MENU
             }
-            if (settings.showFps && !editingControls)
-                PerfOverlay(Modifier.align(Alignment.TopStart).padding(start = 90.dp, top = 16.dp))
+            if (settings.showFps && !editingControls) {
+                val modifier = Modifier.align(Alignment.TopStart).padding(start = 90.dp, top = 16.dp)
+                if (glView.lowLatency) SurfacePerfOverlay(glView, canvasPx.width, controlBounds.values.toList(), modifier)
+                else PerfOverlay(modifier)
+            }
+            if (!editingControls) playerControls()
             if (settings.showScale && !editingControls)
                 ScaleOverlay(Modifier.align(Alignment.TopEnd).padding(end = 90.dp, top = 16.dp))
             if (com.seedlessds.app.BuildConfig.FRAME_CONTROLS && !editingControls)
@@ -452,6 +490,35 @@ fun EmulatorScreen(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
+private fun Modifier.stylusInput(glView: DsGlView): Modifier =
+    motionEventSpy { event ->
+        if (glView.lowLatency && (event.actionMasked == MotionEvent.ACTION_DOWN ||
+                event.actionMasked == MotionEvent.ACTION_POINTER_DOWN)) {
+            glView.requestUnbufferedDispatch(event)
+        }
+    }.pointerInput(glView) {
+        try {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val rect = glView.bottomScreenRect
+                    for (change in event.changes) {
+                        val id = change.id.value
+                        when {
+                            !change.pressed || change.isConsumed -> glView.stylusInput.up(id)
+                            !change.previousPressed -> glView.stylusInput.down(id, change.position.x, change.position.y, rect)
+                            else -> glView.stylusInput.move(id, change.position.x, change.position.y, rect)
+                        }
+                        change.consume()
+                    }
+                }
+            }
+        } finally {
+            glView.stylusInput.cancel()
+        }
+    }
+
 @Composable
 private fun PerfOverlay(modifier: Modifier) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
@@ -477,6 +544,82 @@ private fun PerfOverlay(modifier: Modifier) {
             .background(Color(0x8C000000), RoundedCornerShape(7.dp))
             .padding(horizontal = 7.dp, vertical = 3.dp),
     )
+}
+
+@Composable
+private fun SurfacePerfOverlay(glView: DsGlView, width: Int, controls: List<Rect>, modifier: Modifier) {
+    val uiContext = androidx.compose.ui.platform.LocalContext.current
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val measurer = rememberTextMeasurer()
+    val style = androidx.compose.material3.LocalTextStyle.current.merge(
+        color = Color.White, fontFamily = SeedlessMono, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    var origin by remember { mutableStateOf<Offset?>(null) }
+    var windowOrigin by remember { mutableStateOf<Offset?>(null) }
+    var bitmapSize by remember { mutableStateOf(IntSize.Zero) }
+    var label by remember { mutableStateOf("") }
+    val bounds = windowOrigin?.let { Rect(it, Size(bitmapSize.width.toFloat(), bitmapSize.height.toFloat())) }
+    val useSurface = glView.supportsSurfaceOverlay && bounds != null && !bounds.isEmpty
+        && controls.none { it.overlaps(bounds) }
+    androidx.compose.runtime.DisposableEffect(glView) {
+        onDispose { glView.setPerformanceOverlay(null) }
+    }
+    androidx.compose.runtime.LaunchedEffect(glView, density, direction, style, origin, width, useSurface) {
+        if (!useSurface) glView.setPerformanceOverlay(null)
+        val position = origin ?: return@LaunchedEffect
+        val horizontal = with(density) { 7.dp.roundToPx() }
+        val vertical = with(density) { 3.dp.roundToPx() }
+        val radius = with(density) { 7.dp.toPx() }
+        val maxWidth = (width - with(density) { 90.dp.roundToPx() } - 2 * horizontal).coerceAtLeast(1)
+        val scope = CanvasDrawScope()
+        var ticks = 0
+        var previous = ""
+        while (true) {
+            val pc = SeedlessCore.hudWord()
+            val a = (pc ushr 16) * 0.0625f
+            val b = (pc and 0xFFFF) * 0.0625f
+            val value = if (pc == -1) "" else String.format(uiContext.getString(R.string.performance_percentage_format), a, b)
+            if (value != previous) {
+                previous = value
+                label = value
+                if (value.isEmpty()) {
+                    glView.setPerformanceOverlay(null)
+                    bitmapSize = IntSize.Zero
+                } else {
+                    val layout = measurer.measure(value, style, constraints = Constraints(maxWidth = maxWidth))
+                    val size = IntSize(layout.size.width + 2 * horizontal, layout.size.height + 2 * vertical)
+                    bitmapSize = size
+                    if (useSurface) {
+                        val bitmap = ImageBitmap(size.width, size.height)
+                        scope.draw(density, direction, Canvas(bitmap), Size(size.width.toFloat(), size.height.toFloat())) {
+                            drawRoundRect(Color(0x8C000000), cornerRadius = CornerRadius(radius))
+                            drawText(layout, topLeft = Offset(horizontal.toFloat(), vertical.toFloat()))
+                        }
+                        glView.setPerformanceOverlay(SurfaceOverlayFrame(bitmap.asAndroidBitmap(),
+                            position.x.roundToInt(), position.y.roundToInt()))
+                    }
+                }
+            }
+            if (pc != -1 && ticks++ % 40 == 0) com.seedlessds.app.AppLog.i("reconDS", String.format("HUD %.1f %.1f", a, b))
+            kotlinx.coroutines.delay(250)
+        }
+    }
+    Box(modifier
+        .size(with(density) { bitmapSize.width.toDp() }, with(density) { bitmapSize.height.toDp() })
+        .onGloballyPositioned { coordinates ->
+            val location = IntArray(2)
+            glView.getLocationInWindow(location)
+            val windowPosition = coordinates.positionInWindow()
+            windowOrigin = windowPosition
+            origin = windowPosition - Offset(location[0].toFloat(), location[1].toFloat())
+        }
+        .then(if (useSurface) Modifier.semantics { text = AnnotatedString(label) } else Modifier)) {
+        if (!useSurface && label.isNotEmpty()) Text(
+            text = label, style = style,
+            modifier = Modifier.background(Color(0x8C000000), RoundedCornerShape(7.dp))
+                .padding(horizontal = 7.dp, vertical = 3.dp),
+        )
+    }
 }
 
 @Composable
@@ -615,7 +758,7 @@ private fun GameMenu(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = uiContext.getString(R.string.menu_paused),
+                            text = uiContext.getString(if (MultiplayerSession.active) R.string.achievements_now_playing else R.string.menu_paused),
                             color = colors.red,
                             fontFamily = SeedlessMono,
                             fontSize = 9.sp,
@@ -761,6 +904,7 @@ private fun ControlsOverlay(
     hiddenSet: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Boolean>,
     selectedId: String?, onSelect: (String) -> Unit,
     editMode: Boolean, hideControls: Boolean, dispatchExtra: (Int, Boolean) -> Unit,
+    bounds: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Rect>?,
     onMenu: () -> Unit
 ) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
@@ -783,12 +927,22 @@ private fun ControlsOverlay(
 
     fun isVisible(id: String): Boolean = editMode || hiddenSet[id] != true
 
+    val visibleControls = if (bounds != null) mutableSetOf<String>() else null
+    androidx.compose.runtime.DisposableEffect(bounds) {
+        onDispose { bounds?.clear() }
+    }
+    androidx.compose.runtime.SideEffect {
+        bounds?.keys?.toList()?.filter { it !in visibleControls.orEmpty() }?.forEach { bounds.remove(it) }
+    }
+
     fun Modifier.ctrl(id: String): Modifier {
+        visibleControls?.add(id)
         val o = offsets[id] ?: (0f to 0f)
         val sc = scales[id] ?: 1f
         var m = this
             .offset { IntOffset(o.first.dp.roundToPx(), o.second.dp.roundToPx()) }
             .graphicsLayer { scaleX = sc; scaleY = sc; if (editMode && hiddenSet[id] == true) this.alpha = 0.35f }
+        if (bounds != null) m = m.onGloballyPositioned { bounds[id] = it.boundsInWindow() }
         if (editMode) m = m
             .dashedOutline(selectedId == id)
             .pointerInput(id) {

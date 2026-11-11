@@ -17,7 +17,16 @@ object SeedlessCore {
         }
     }
 
+    @JvmStatic external fun multiplayerStart(mode: Int, name: ByteArray, local: ByteArray, owner: ByteArray,
+        interfaceIndex: Int, mac: ByteArray, maximum: Int): Int
+    @JvmStatic external fun multiplayerBindInterface(fd: Int, interfaceIndex: Int): Int
+    @JvmStatic external fun multiplayerStop(): Int
+    @JvmStatic external fun multiplayerPause(paused: Boolean): Boolean
+    @JvmStatic external fun multiplayerActive(): Boolean
+    @JvmStatic external fun multiplayerStatus(): ByteArray
+
     @JvmStatic external fun attachSurface(surface: Any, versionCode: Int, apiLevel: Int)
+    @JvmStatic external fun loadFirmware(configBits: Long, runLimitUs: Long): Boolean
     @JvmStatic external fun loadRom(path: String, stateSlot: Int, configBits: Long,
                                     benchmarkFrames: Int, inCacheDir: Boolean,
                                     runLimitUs: Long): Boolean
@@ -28,12 +37,26 @@ object SeedlessCore {
     @JvmStatic external fun quit()
     @JvmStatic external fun release()
 
+    @JvmStatic external fun romHeader(path: String, name: String): ByteArray?
     @JvmStatic external fun romIsNds(path: String): Boolean
     @JvmStatic external fun romType(path: String): Int
     @JvmStatic external fun romSize(path: String): Long
     @JvmStatic external fun romIcon(path: String, palette: IntArray, pixels: ByteArray,
                                     title: ByteArray): Boolean
 
+    @JvmStatic external fun setEarlyInputPacing(enabled: Boolean)
+    @JvmStatic external fun setOutputPacing(enabled: Boolean)
+    @JvmStatic external fun completeOutputFrame(token: Long, consumed: Boolean)
+    @JvmStatic external fun recordOutputReady(token: Long)
+    @JvmStatic external fun refreshOutputGpu(token: Long)
+    @JvmStatic external fun recordOutputBufferAge()
+    @JvmStatic external fun releaseOutputTiming()
+    @JvmStatic external fun createSurfaceOutput(surface: android.view.Surface, width: Int, height: Int, intervalNs: Long): Long
+    @JvmStatic external fun acquireSurfaceOutput(handle: Long): Int
+    @JvmStatic external fun completeSurfaceOutputFrame(handle: Long, token: Long, consumed: Boolean)
+    @JvmStatic external fun refreshSurfaceOutputGpu(handle: Long, token: Long)
+    @JvmStatic external fun presentSurfaceOutput(handle: Long, token: Long): Boolean
+    @JvmStatic external fun closeSurfaceOutput(handle: Long)
     @JvmStatic external fun input(packedPad: Int, packedTouch: Int, mask: Int)
     @JvmStatic external fun uploadScreens(first: Int, second: Int, skipUpload: Boolean)
     @JvmStatic external fun drawScreen(texture: Int, index: Int)
@@ -45,6 +68,8 @@ object SeedlessCore {
     @JvmStatic external fun clearScreens(textureTop: Int, textureBottom: Int)
     @JvmStatic external fun signalScreen()
     @JvmStatic external fun waitScreen()
+    @JvmStatic external fun requestScreenRedraw()
+    @JvmStatic external fun waitScreenUpdate(): Int
 
     @JvmStatic external fun snapshotSlot(slot: Int, top: IntArray, bottom: IntArray)
     @JvmStatic external fun snapshotFile(path: String, top: IntArray, bottom: IntArray)
@@ -102,7 +127,7 @@ object SeedlessCore {
     @JvmStatic external fun fxRender(textureTop: Int, textureBottom: Int, vertexTop: Int,
                                      vertexBottom: Int, vertexIntermediate: Int,
                                      topWidth: Int, topHeight: Int, bottomWidth: Int,
-                                     bottomHeight: Int, flag: Boolean)
+                                     bottomHeight: Int, flag: Boolean): Long
     @JvmStatic external fun extfxLoad(recipePath: String, vboVertexOffset: Int,
                                       vboTexcoordOffset: Int): Int
     @JvmStatic external fun extfxSetup(sourceWidth: Int, sourceHeight: Int, x: Int, y: Int,

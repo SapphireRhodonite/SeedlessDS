@@ -63,6 +63,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -102,6 +103,8 @@ fun LibraryScreen(
     onGlobalSettings: () -> Unit,
     onAddFolder: () -> Unit,
     onOpenSingle: () -> Unit,
+    onBootFirmware: () -> Unit,
+    onOpenMultiplayer: (String?) -> Unit,
 ) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
     val colors = seedless
@@ -270,10 +273,12 @@ fun LibraryScreen(
             val entry = highlighted
             if (entry != null) { RomLibrary.toggleFavorite(ctx, entry); browseTick++; true } else false
         }
+        LibraryKeyRouter.openMultiplayer = { onOpenMultiplayer(null); true }
         onDispose {
             LibraryKeyRouter.cycleFilter = null
             LibraryKeyRouter.openOptions = null
             LibraryKeyRouter.toggleFavorite = null
+            LibraryKeyRouter.openMultiplayer = null
         }
     }
 
@@ -386,6 +391,8 @@ fun LibraryScreen(
                         )
                     }
                     if (!searchOpen) {
+                        MultiplayerHeaderButton { onOpenMultiplayer(null) }
+                        Spacer(Modifier.width(4.dp))
                         SeedlessHeaderAction(Icons.Rounded.Search, uiContext.getString(R.string.library_search), { searchOpen = true })
                         ProfileChip(profile) { profileDialog = true }
                     Spacer(Modifier.width(4.dp))
@@ -400,6 +407,13 @@ fun LibraryScreen(
                     SeedlessHeaderAction(Icons.Rounded.Settings, uiContext.getString(R.string.common_settings), onGlobalSettings)
                     }
                 }
+                TextButton(
+                    onClick = onBootFirmware,
+                    modifier = Modifier.align(Alignment.End).padding(end = 12.dp),
+                ) {
+                    Text(uiContext.getString(R.string.firmware_boot), color = colors.text2, fontFamily = Manrope)
+                }
+                if (!searchOpen) MultiplayerNearbyWatch()
                 LibraryFilterRow(
                     selected = filter,
                     onSelect = {
@@ -408,6 +422,7 @@ fun LibraryScreen(
                         RomLibrary.setFilter(ctx, it)
                     },
                     modifier = Modifier.padding(bottom = 8.dp),
+                    trailing = { if (!searchOpen && openFolder == null) MultiplayerInvitePill { onOpenMultiplayer(it) } },
                 )
                 Box(Modifier.fillMaxWidth().height(1.dp).background(colors.line))
             }
@@ -766,7 +781,7 @@ private fun RecentCard(
 }
 
 @Composable
-private fun PlatformBadge(
+internal fun PlatformBadge(
     text: String,
     modifier: Modifier = Modifier,
     fontSize: androidx.compose.ui.unit.TextUnit = 8.sp,
@@ -1052,6 +1067,17 @@ private fun GameDetailDialog(
                 title = uiContext.getString(R.string.library_start_game),
                 desc = uiContext.getString(R.string.library_start_a_new_game_from_the_beginning),
                 onClick = onPlayNew,
+            )
+            if (platform == RomLibrary.Platform.DS) DetailAction(
+                icon = Icons.Rounded.PlayArrow,
+                tint = colors.text2,
+                title = uiContext.getString(R.string.phantom_title),
+                desc = uiContext.getString(R.string.phantom_action_description),
+                onClick = {
+                    onDismiss()
+                    ctx.startActivity(android.content.Intent(ctx, PhantomActivity::class.java)
+                        .setData(entry.uri).putExtra(PhantomActivity.ROM_NAME, entry.name))
+                },
             )
             DetailAction(
                 icon = Icons.Rounded.Tune,

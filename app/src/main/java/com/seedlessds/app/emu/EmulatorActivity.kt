@@ -7,6 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.os.VibratorManager
@@ -28,7 +29,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.seedlessds.app.filesystem.PathCache
 
-class EmulatorActivity : ComponentActivity() {
+open class EmulatorActivity : ComponentActivity() {
+    private var phantom: PhantomPlayer? = null
+    private var releasingPlayer = false
     private val reconSlot = java.util.concurrent.atomic.AtomicInteger(0)
 
     private var reconOpenRom: String? = null
@@ -38,6 +41,7 @@ class EmulatorActivity : ComponentActivity() {
         const val EXTRA_ROM_URI = "rom_uri"
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_LOAD_SLOT = "load_slot"
+        const val EXTRA_FIRMWARE_BOOT = "firmware_boot"
         private const val TAG = "SeedlessEmu"
         private var pendingClose: kotlinx.coroutines.CompletableDeferred<Unit>? = null
         const val UP = 0; const val DOWN = 1; const val LEFT = 2; const val RIGHT = 3
@@ -52,6 +56,7 @@ class EmulatorActivity : ComponentActivity() {
         private set
     private var closed = false
     @Volatile private var romKey: String = "game.nds"
+    private var firmwareBoot = false
     private var extDisplay: ExternalDisplayManager? = null
     private val externalInfo by lazy { ExternalInfoController(this) }
     private var externalInfoActive: Boolean? = null
@@ -64,47 +69,84 @@ class EmulatorActivity : ComponentActivity() {
     @Volatile private var booting = true
     private val bootingState = androidx.compose.runtime.mutableStateOf(true)
     private var bootTitle = ""
+    private var multiplayerInterruptionShown = false
 
     private fun refreshExternalMode() {
         if (isClosing) return
-        setExternalInfoMode(if (appForeground) menuOpen || booting else null)
+        setExternalInfoMode(if (appForeground) (menuOpen && !MultiplayerSession.active) || booting else null)
     }
 
-    private fun refreshPauseState() {
+    internal fun refreshPauseState() {
         if (isClosing || !inited) return
-        val pause = menuOpen || !appForeground || bootHold
+        val menuPaused = menuOpen && !MultiplayerSession.active
+        val session = phantom
+        val pause = menuPaused || (!appForeground && session?.running != true) || bootHold
         RuntimeControl.lifecyclePaused = pause
         try { SeedlessCore.pause(if (pause) 1 else 0) } catch (_: Throwable) {}
+        if (session != null) return
+        val interrupted = SeedlessCore.multiplayerPause(!appForeground)
+        if (interrupted && appForeground && !menuOpen && !multiplayerInterruptionShown) {
+            multiplayerInterruptionShown = true
+            android.app.AlertDialog.Builder(this)
+                .setTitle(AppR.string.multiplayer_interrupted_title)
+                .setMessage(AppR.string.multiplayer_interrupted_message)
+                .setPositiveButton(AppR.string.common_ok, null)
+                .show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val player = when (this) {
+            is PhantomPrimaryActivity -> PhantomPlayer(this, true)
+            is PhantomPeerActivity -> PhantomPlayer(this, false)
+            else -> null
+        }
+        phantom = player
         val previous = pendingClose
-        if (previous == null) createEmulation()
+        if (player == null && previous == null) createEmulation()
         else lifecycleScope.launch {
-            previous.await()
-            if (!isFinishing && !isDestroyed) createEmulation()
+            previous?.await()
+            if (player != null) {
+                try {
+                    player.attach()
+                    player.connect()
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                catch (e: Exception) { player.notify(PhantomPlayer.ERROR, e.localizedMessage); return@launch }
+            }
+            if (!isFinishing && !isDestroyed && player?.closing != true) {
+                createEmulation()
+                player?.notify(PhantomPlayer.READY)
+            }
         }
     }
 
     private fun createEmulation() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enterImmersive()
-        EmuAssets.ensureInstalled(this)
+        if (phantom == null) EmuAssets.ensureInstalled(this)
 
+        firmwareBoot = intent.getBooleanExtra(EXTRA_FIRMWARE_BOOT, false)
         val data = intent.data
         val romPath = intent.getStringExtra(EXTRA_ROM_PATH)
             ?: data?.takeIf { it.scheme == "file" }?.path
         val romUri = intent.getStringExtra(EXTRA_ROM_URI)?.let { Uri.parse(it) }
             ?: data?.takeIf { it.scheme == "content" }
         val displayName: String = when {
+            firmwareBoot -> {
+                romKey = "firmware"
+                val name = getString(AppR.string.firmware_title)
+                PathCache.changeRom(romKey, null, null, name)
+                name
+            }
             romPath != null -> { romKey = romPath; val n = romPath.substringAfterLast('/'); PathCache.changeRom(romKey, null, romPath, n); n }
             romUri != null -> { val n = queryName(romUri) ?: "game.nds"; romKey = n; PathCache.changeRom(romKey, romUri, null, n); libraryUri = romUri; n }
             else -> { finish(); return }
         }
 
-        val gameBase = displayName.substringBeforeLast('.')
-        val userSub = if (RuntimeControl.active) "" else Profiles.userSub(this)
+        val gameBase = if (firmwareBoot) getString(AppR.string.multiplayer_download_play)
+            else displayName.substringBeforeLast('.')
+        val userSub = if (RuntimeControl.active || phantom != null) "" else Profiles.userSub(this)
         PathCache.activeUserSub = userSub
         SettingsRepo.load(this)
         SettingsRepo.activateFor(this, gameBase)
@@ -137,7 +179,7 @@ class EmulatorActivity : ComponentActivity() {
             com.seedlessds.app.Recon.rom("open", displayName)
             reconOpenRom = displayName
         }
-        val gameIcon = runCatching {
+        val gameIcon = if (firmwareBoot) null else runCatching {
             val stream = if (romPath != null) java.io.FileInputStream(romPath)
                 else contentResolver.openInputStream(romUri!!)
             stream?.let { NdsRom.read(it).icon?.asImageBitmap() }
@@ -153,7 +195,7 @@ class EmulatorActivity : ComponentActivity() {
         refreshPauseState()
         window.decorView.postDelayed({ bootHold = false; refreshPauseState() }, 1000)
 
-        glView = DsGlView(this)
+        glView = DsGlView(this, SettingsRepo.current.lowLatency && !MultiplayerSession.active)
 
         RuntimeControl.attach(this)
 
@@ -176,6 +218,7 @@ class EmulatorActivity : ComponentActivity() {
                     },
                     stateInfo = stateInfo,
                     onSaveState = { slot ->
+                        if (MultiplayerSession.active) android.widget.Toast.makeText(this, AppR.string.multiplayer_operation_unavailable, android.widget.Toast.LENGTH_SHORT).show()
                         val ra = com.seedlessds.app.ra.RetroAchievements
                         reconSlot.set(slot)
                         val ok = SeedlessCore.stateSave(slot, false)
@@ -188,6 +231,7 @@ class EmulatorActivity : ComponentActivity() {
                         ok
                     },
                     onLoadState = { slot ->
+                        if (MultiplayerSession.active) android.widget.Toast.makeText(this, AppR.string.multiplayer_operation_unavailable, android.widget.Toast.LENGTH_SHORT).show()
                         val ra = com.seedlessds.app.ra.RetroAchievements
                         ra.beginStateLoad()
                         reconSlot.set(slot)
@@ -233,13 +277,14 @@ class EmulatorActivity : ComponentActivity() {
                     onApplyExternal = { extDisplay?.applyDisplaySettings() },
                     extTapCount = extTapState.intValue,
                     onExtEditState = { editing, selected -> extDisplay?.setEdit(editing, selected) },
+                    playerControls = { phantom?.let { PhantomControls(it) } },
                 )
             }
         }
         applyOrientation()
         startEmulation()
-        if (com.seedlessds.app.ra.RetroAchievements.isEnabled()) {
-            val bootSlot = intent.getIntExtra(EXTRA_LOAD_SLOT, -1)
+        if (phantom == null && !firmwareBoot && com.seedlessds.app.ra.RetroAchievements.isEnabled()) {
+            val bootSlot = if (MultiplayerSession.active) -1 else intent.getIntExtra(EXTRA_LOAD_SLOT, -1)
             val bootBytes = if (bootSlot in 0..9) {
                 stateInfo.readSidecar(bootSlot)
             } else null
@@ -250,7 +295,7 @@ class EmulatorActivity : ComponentActivity() {
             com.seedlessds.app.ra.RetroAchievements.setBootStateSidecar(bootBytes)
         }
         if (SettingsRepo.current.extDisplayType != 0) {
-            extDisplay = ExternalDisplayManager(this).also {
+            extDisplay = ExternalDisplayManager(this, glView.lowLatency, phantom?.primary == false).also {
                 it.touchSink = { active, packed -> glView.pushTouch(active, packed) }
                 it.onTap = { runOnUiThread { extTapState.intValue++ } }
                 if (externalInfoActive == false) it.start()
@@ -284,21 +329,42 @@ class EmulatorActivity : ComponentActivity() {
         }
     }
 
+    private fun acquireMultiplayerWifiLock(): WifiManager.WifiLock? {
+        if (Build.VERSION.SDK_INT < 29 || phantom != null || !MultiplayerSession.active) return null
+        return try {
+            val wifi = applicationContext.getSystemService(WIFI_SERVICE) as? WifiManager
+            wifi?.createWifiLock(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "seedless-multiplayer")?.apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        } catch (error: RuntimeException) {
+            com.seedlessds.app.AppLog.e(TAG, "Wi-Fi low latency unavailable", error)
+            null
+        }
+    }
+
     private fun startEmulation() {
         val cfg = SettingsRepo.current
-        val loadSlot = intent.getIntExtra(EXTRA_LOAD_SLOT, -1)
+        val loadSlot = if (firmwareBoot || MultiplayerSession.active) -1 else intent.getIntExtra(EXTRA_LOAD_SLOT, -1)
         val t = Thread {
+            val wifiLock = acquireMultiplayerWifiLock()
             try {
                 SeedlessCore.firmwareUser(cfg.firmwareNick, cfg.firmwarePacked())
-                SeedlessCore.autosaveInterval(cfg.autosaveInterval())
-                SeedlessCore.audioVolume(cfg.volume * 10)
+                SeedlessCore.autosaveInterval(if (firmwareBoot) 0 else cfg.autosaveInterval())
+                SeedlessCore.audioVolume(if (phantom != null && !appForeground) 0 else cfg.volume * 10)
                 com.seedlessds.app.SeedlessBridge.resetMemory()
+                SeedlessCore.setEarlyInputPacing(glView.lowLatency)
                 RuntimeControl.beforeLoad()
                 val clock = if (cfg.customClockEnable) cfg.customClock else -1L
-                val ok = SeedlessCore.loadRom(romKey, loadSlot, cfg.pack(), 0, false, clock)
+                val ok = if (firmwareBoot) SeedlessCore.loadFirmware(cfg.pack(), clock)
+                    else SeedlessCore.loadRom(romKey, loadSlot, cfg.pack(), 0, false, clock)
                 com.seedlessds.app.AppLog.i(TAG, "startGame returned ok=$ok")
                 if (!ok) runOnUiThread { showLoadError() }
             } catch (e: Throwable) { com.seedlessds.app.AppLog.e(TAG, "startGame failed", e); runOnUiThread { showLoadError() } }
+            finally {
+                try { if (wifiLock?.isHeld == true) wifiLock.release() }
+                catch (error: RuntimeException) { com.seedlessds.app.AppLog.e(TAG, "Wi-Fi low latency release failed", error) }
+            }
         }
         t.name = "seedless-emu"; t.priority = Thread.MAX_PRIORITY; emuThread = t; t.start()
         startRumblePoll()
@@ -374,8 +440,8 @@ class EmulatorActivity : ComponentActivity() {
         if (errorShown || isFinishing || isClosing) return
         errorShown = true
         android.app.AlertDialog.Builder(this)
-            .setTitle(getString(AppR.string.emu_failed_to_load_rom))
-            .setMessage(getString(AppR.string.emu_load_error_description))
+            .setTitle(getString(if (firmwareBoot) AppR.string.multiplayer_firmware_load_failed else AppR.string.emu_failed_to_load_rom))
+            .setMessage(getString(if (firmwareBoot) AppR.string.multiplayer_firmware_load_error else AppR.string.emu_load_error_description))
             .setCancelable(false)
             .setPositiveButton(getString(AppR.string.common_ok)) { _, _ -> finish() }
             .show()
@@ -484,10 +550,19 @@ class EmulatorActivity : ComponentActivity() {
         commitPlayTime()
         stopCpuLoad()
         appForeground = false
+        phantom?.let {
+            it.visibility(false)
+            if (::glView.isInitialized) {
+                glView.clearInput()
+                keyL = false
+                keyR = false
+            }
+            if (inited) SeedlessCore.audioVolume(0)
+        }
         refreshPauseState()
         if (::glView.isInitialized) glView.onPause()
         refreshExternalMode()
-        if (!isFinishing && !isClosing) showResumeNotification()
+        if (phantom == null && !isFinishing && !isClosing) showResumeNotification()
     }
 
     override fun onResume() {
@@ -498,6 +573,10 @@ class EmulatorActivity : ComponentActivity() {
         cancelResumeNotification()
         startCpuLoad()
         appForeground = true
+        phantom?.let {
+            it.visibility(true)
+            if (inited) SeedlessCore.audioVolume(SettingsRepo.current.volume * 10)
+        }
         refreshPauseState()
         refreshExternalMode()
     }
@@ -522,6 +601,7 @@ class EmulatorActivity : ComponentActivity() {
     }
 
     private fun commitPlayTime() {
+        if (phantom != null) return
         val uri = libraryUri ?: return
         if (sessionStart > 0L) {
             RomLibrary.addPlayTime(this, uri, System.currentTimeMillis() - sessionStart)
@@ -536,6 +616,11 @@ class EmulatorActivity : ComponentActivity() {
 
 
     override fun finish() {
+        val player = phantom
+        if (player != null && !player.closing) {
+            player.notify(PhantomPlayer.CLOSE)
+            return
+        }
         if (closed || !inited) {
             super.finish()
             return
@@ -554,7 +639,7 @@ class EmulatorActivity : ComponentActivity() {
         val rumble = rumbleThread
         stopRumblePoll()
         stopCpuLoad()
-        com.seedlessds.app.ra.RetroAchievements.unloadGame()
+        if (phantom == null) com.seedlessds.app.ra.RetroAchievements.unloadGame()
         cancelResumeNotification()
         extDisplay?.stop()
         if (::glView.isInitialized) glView.stopRendering()
@@ -577,7 +662,7 @@ class EmulatorActivity : ComponentActivity() {
                     pendingClose = null
                     completion.complete(Unit)
                     com.seedlessds.app.AppLog.i(TAG, "emulation closed")
-                    if (!isDestroyed) super.finish()
+                    if (!isDestroyed) super.finish() else releasePlayer()
                 }
             } catch (error: Throwable) {
                 com.seedlessds.app.AppLog.e(TAG, "emulation close failed", error)
@@ -588,6 +673,13 @@ class EmulatorActivity : ComponentActivity() {
     override fun onDestroy() {
         com.seedlessds.app.AppLog.i(TAG, "onDestroy")
         super.onDestroy()
-        if (!closed) closeEmulation()
+        if (!closed && inited) closeEmulation() else releasePlayer()
+    }
+
+    private fun releasePlayer() {
+        val player = phantom ?: return
+        if (releasingPlayer) return
+        releasingPlayer = true
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { player.close() }
     }
 }

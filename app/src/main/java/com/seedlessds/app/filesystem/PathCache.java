@@ -63,6 +63,14 @@ public class PathCache {
     }
 
     public static synchronized NativePathHandle open(String path, String mode) {
+        if (path.startsWith("content://") && (mode.equals("r") || mode.equals("rb"))) {
+            try {
+                ParcelFileDescriptor pfd = ctx.getContentResolver().openFileDescriptor(Uri.parse(path), "r");
+                return pfd == null ? null : new NativePathHandle(path, pfd.detachFd(), path);
+            } catch (IOException | SecurityException e) {
+                return null;
+            }
+        }
         if (romKey != null && romKey.equals(path)) {
             if (romUri != null) {
                 try {
@@ -87,7 +95,7 @@ public class PathCache {
         if (write) {
             File parent = f.getParentFile();
             if (parent != null && !parent.exists()) parent.mkdirs();
-            if (!f.exists()) {
+            if (!m.contains("x") && !f.exists()) {
                 try { f.createNewFile(); } catch (IOException ignored) { }
             }
         }

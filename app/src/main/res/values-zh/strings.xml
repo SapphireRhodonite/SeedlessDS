@@ -417,7 +417,7 @@
     <string name="settings_firmware_birthday_some_games_use_it_month_and">"固件生日（部分游戏会用到）。月和日。"</string>
     <string name="settings_firmware_language_some_games_read_it">"固件语言（部分游戏会读取此设置）。"</string>
     <string name="settings_firmware_nickname_language_color_rtc">"固件：昵称、语言、颜色、实时时钟"</string>
-    <string name="settings_forces_the_game_s_main_screen_to_always_be">"强制让游戏的主屏幕始终为上屏。"</string>
+    <string name="settings_forces_the_game_s_main_screen_to_always_be">"覆盖游戏请求的上下屏切换。可能导致画面闪烁或重叠。正常游玩时请关闭。"</string>
     <string name="settings_fps_mode">"帧率模式"</string>
     <string name="settings_fps_with_transparent_background">"透明背景帧率显示"</string>
     <string name="settings_framerate_stabilizer">"帧率稳定器"</string>
@@ -460,7 +460,7 @@
     <string name="settings_january">"一月"</string>
     <string name="settings_july">"七月"</string>
     <string name="settings_june">"六月"</string>
-    <string name="settings_keep_main_screen_on_top">"保持主屏幕在上方"</string>
+    <string name="settings_keep_main_screen_on_top">"强制主图形引擎输出到上屏"</string>
     <string name="settings_keeps_the_cpu_at_high_frequency_0_off">"使 CPU 保持高频运行（0 表示关闭）。会增加耗电量。"</string>
     <string name="settings_khaki">"卡其色"</string>
     <string name="settings_landscape">"横屏"</string>

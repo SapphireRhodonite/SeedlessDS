@@ -1,0 +1,21 @@
+<resources>
+    <string name="phantom_title">与临时副本一起游玩</string>
+    <string name="phantom_ds_only">请选择已有游戏内存档的 Nintendo DS 卡带。</string>
+    <string name="phantom_conflict">存档在会话外发生了变化。两个副本均已保留。</string>
+    <string name="phantom_busy">请先关闭正在运行的游戏，再打开或保存副本会话。</string>
+    <string name="phantom_save_failed">无法验证写入的存档。原存档和结果均已保留，以便恢复。</string>
+    <string name="phantom_link_error">无法连接两个玩家（错误码 %1$d）。</string>
+    <string name="phantom_to_peer">主游戏 → 副本</string>
+    <string name="phantom_to_primary">副本 → 主游戏</string>
+    <string name="phantom_playing_main">正在操作主游戏</string>
+    <string name="phantom_playing_clone">正在操作副本</string>
+    <string name="phantom_unavailable">有玩家在会话结束前断开了连接。</string>
+    <string name="phantom_result_title">是否保留存档？</string>
+    <string name="phantom_result_body">原存档尚未更改。选择「保留主游戏」将用主游戏的游戏内存档覆盖原存档。会话结束时会丢弃副本存档。</string>
+    <string name="phantom_keep">保留主游戏</string>
+    <string name="phantom_discard">丢弃会话</string>
+    <string name="phantom_kept">主游戏存档已验证</string>
+    <string name="phantom_discarded">会话已丢弃</string>
+    <string name="phantom_action_description">使用此存档的独立副本进行本地交换</string>
+    <string name="phantom_missing_save">请先在游戏中存档，再启动副本。</string>
+</resources>

@@ -161,7 +161,6 @@ fun SettingsScreen(
     var lastCat by remember { mutableStateOf(-1) }
     var homeSelection by remember { mutableStateOf(0) }
     var subPage by remember { mutableStateOf<String?>(null) }
-    var wifiDialog by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     val setS: (DsSettings) -> Unit = { s = it }
     val perGame = subtitle != null
@@ -207,15 +206,6 @@ fun SettingsScreen(
         return
     }
 
-    if (wifiDialog) SeedlessConfirmDialog(
-        title = uiContext.getString(R.string.settings_multiplayer_wifi),
-        message = uiContext.getString(R.string.settings_the_emulator_does_not_support_local),
-        confirmLabel = uiContext.getString(R.string.settings_got_it),
-        destructive = false,
-        onConfirm = { wifiDialog = false },
-        onDismiss = { wifiDialog = false },
-        cancelLabel = uiContext.getString(R.string.common_close),
-    )
     if (confirmReset && onReset != null) SeedlessConfirmDialog(
         title = uiContext.getString(R.string.settings_reset_to_global_settings),
         message = uiContext.getString(R.string.settings_this_discards_this_game_s_own_settings_and),
@@ -316,12 +306,12 @@ fun SettingsScreen(
                     when (openCat) {
                         0 -> VideoSettings(s, setS, gameRunning)
                         1 -> ScreenSettings(s, setS, subPage) { subPage = it }
-                        2 -> TouchSettings(s, setS)
+                        2 -> TouchSettings(s, setS, gameRunning)
                         3 -> PadSettings(s, setS, { onSave(s); onOpenKeyMapper() }, { onSave(s); onOpenMappingInfo() })
                         4 -> AudioSettings(s, setS)
                         5 -> SystemSettings(s, setS)
                         6 -> SaveSettings(s, setS)
-                        7 -> AdvancedSettings(s, setS, !perGame, { wifiDialog = true }, { onSave(s); onOpenSystemTools() })
+                        7 -> AdvancedSettings(s, setS, !perGame, { uiContext.startActivity(android.content.Intent(uiContext, MultiplayerActivity::class.java)) }, { onSave(s); onOpenSystemTools() })
                         8 -> RaCategory()
                     }
                     }
@@ -526,7 +516,7 @@ fun SettingsScreen(
         s.extDisplayDelay, 0, 2, uiContext.getString(R.string.settings_frames)) { set(s.copy(extDisplayDelay = it)) }
 }
 
-@Composable private fun TouchSettings(s: DsSettings, set: (DsSettings) -> Unit) {
+@Composable private fun TouchSettings(s: DsSettings, set: (DsSettings) -> Unit, gameRunning: Boolean) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
     val options = androidx.compose.runtime.remember(uiContext, androidx.compose.ui.platform.LocalConfiguration.current) { SettingsOptions(uiContext) }
     Group(uiContext.getString(R.string.settings_appearance))
@@ -540,6 +530,10 @@ fun SettingsScreen(
         options.menuPos, s.menuButtonPos) { set(s.copy(menuButtonPos = it)) }
 
     Group(uiContext.getString(R.string.settings_behavior))
+    SwitchRow(uiContext.getString(R.string.settings_low_latency),
+        if (gameRunning) uiContext.getString(R.string.settings_locked_while_a_game_is_running_close_the_game_to_change_it)
+        else uiContext.getString(R.string.settings_low_latency_description),
+        s.lowLatency, enabled = !gameRunning) { set(s.copy(lowLatency = it)) }
     SwitchRow(uiContext.getString(R.string.settings_hide_when_a_gamepad_is_connected),
         uiContext.getString(R.string.settings_hides_the_on_screen_buttons_when_a_controller),
         s.hideControlsWithGamepad) { set(s.copy(hideControlsWithGamepad = it)) }

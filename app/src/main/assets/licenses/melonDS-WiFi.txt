@@ -1,0 +1,4 @@
+The DS Wi-Fi controller and local multiplayer transport include code from melonDS, copyright 2016-2025 melonDS team, under the GNU General Public License, version 3 or any later version.
+
+Source: https://github.com/melonDS-emu/melonDS
+Adapted from the WatermelonDS source tree for SeedlessDS. The original copyright and license notices are retained in the sources. See GPL-3.0.txt for the license.

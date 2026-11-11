@@ -152,6 +152,22 @@ Java_com_seedlessds_core_SeedlessCore_waitScreen(JNIEnv *env, jclass cls)
     nds_wait_screen(seedless_core());
 }
 
+JNIEXPORT void JNICALL
+Java_com_seedlessds_core_SeedlessCore_requestScreenRedraw(JNIEnv *env, jclass cls)
+{
+    (void)env;
+    (void)cls;
+    nds_request_screen_redraw(seedless_core());
+}
+
+JNIEXPORT jint JNICALL
+Java_com_seedlessds_core_SeedlessCore_waitScreenUpdate(JNIEnv *env, jclass cls)
+{
+    (void)env;
+    (void)cls;
+    return nds_wait_screen_update(seedless_core());
+}
+
 static void snapshot_to_rgba(JNIEnv *env, jintArray top, jintArray bottom,
                              const uint8_t *src_top, const uint8_t *src_bottom, int ok)
 {

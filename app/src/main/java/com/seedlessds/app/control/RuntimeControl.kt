@@ -244,7 +244,35 @@ object RuntimeControl {
             check(session != null && (command == "STATUS" || active)) { "No active control session" }
             when (command) {
                 "STATUS" -> Unit
+                "MULTIPLAYER" -> {
+                    val action = args.optString("action", "status")
+                    check(!running || action == "status") { "Exit the game before changing multiplayer" }
+                    val result = kotlinx.coroutines.runBlocking {
+                        when (action) {
+                            "start" -> com.seedlessds.app.emu.MultiplayerSession.start(ctx, args.getInt("mode"),
+                                args.optString("name", "Player"), args.optString("address", ""), args.optBoolean("direct", false))
+                            "stop" -> com.seedlessds.app.emu.MultiplayerSession.stop()
+                            "status" -> 0
+                            else -> error("Unknown multiplayer action")
+                        }
+                    }
+                    check(result == 0) { "Multiplayer operation failed: $result" }
+                    val room = com.seedlessds.app.emu.MultiplayerRoom.state.value
+                    return status().put("multiplayer", kotlinx.coroutines.runBlocking {
+                        com.seedlessds.app.emu.MultiplayerSession.status()
+                    }).put("room", JSONObject()
+                        .put("role", room?.role?.name ?: "NONE")
+                        .put("linked", room?.linked == true)
+                        .put("closed", room?.closed == true)
+                        .put("info", room?.info?.toJson()))
+                }
                 "CONFIGURE" -> configure(ctx, args)
+                "LAUNCH_FIRMWARE" -> {
+                    check(!running) { "An emulation session is already running" }
+                    onMain { ctx.startActivity(Intent(ctx, EmulatorActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra(EmulatorActivity.EXTRA_FIRMWARE_BOOT, true)) }
+                }
                 "LAUNCH_ROM" -> {
                     check(!running) { "An emulation session is already running" }
                     val rom = externalFile(ctx, args.getString("rom"))

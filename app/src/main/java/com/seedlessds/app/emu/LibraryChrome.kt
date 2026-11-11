@@ -110,36 +110,40 @@ fun LibraryFilterRow(
     selected: RomLibrary.Filter,
     onSelect: (RomLibrary.Filter) -> Unit,
     modifier: Modifier = Modifier,
+    trailing: @Composable () -> Unit = {},
 ) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        item {
-            LibraryFilterChip(uiContext.getString(R.string.common_all), selected == RomLibrary.Filter.ALL) { onSelect(RomLibrary.Filter.ALL) }
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            contentPadding = PaddingValues(start = 16.dp),
+            modifier = Modifier.weight(1f),
+        ) {
+            item {
+                LibraryFilterChip(uiContext.getString(R.string.common_all), selected == RomLibrary.Filter.ALL) { onSelect(RomLibrary.Filter.ALL) }
+            }
+            item {
+                LibraryFilterChip(
+                    label = uiContext.getString(R.string.common_favorites),
+                    active = selected == RomLibrary.Filter.FAVORITES,
+                    icon = Icons.Filled.Star,
+                    iconTint = FavoriteStar,
+                    onClick = { onSelect(RomLibrary.Filter.FAVORITES) },
+                )
+            }
+            item { LibraryFilterChip(uiContext.getString(R.string.common_ds), selected == RomLibrary.Filter.DS) { onSelect(RomLibrary.Filter.DS) } }
+            item { LibraryFilterChip(uiContext.getString(R.string.common_dsiware), selected == RomLibrary.Filter.DSIWARE) { onSelect(RomLibrary.Filter.DSIWARE) } }
+            item {
+                LibraryFilterChip(
+                    label = uiContext.getString(R.string.library_ra),
+                    active = selected == RomLibrary.Filter.RETRO_ACHIEVEMENTS,
+                    icon = Icons.Rounded.EmojiEvents,
+                    iconTint = SeedlessColors.gold,
+                    onClick = { onSelect(RomLibrary.Filter.RETRO_ACHIEVEMENTS) },
+                )
+            }
         }
-        item {
-            LibraryFilterChip(
-                label = uiContext.getString(R.string.common_favorites),
-                active = selected == RomLibrary.Filter.FAVORITES,
-                icon = Icons.Filled.Star,
-                iconTint = FavoriteStar,
-                onClick = { onSelect(RomLibrary.Filter.FAVORITES) },
-            )
-        }
-        item { LibraryFilterChip(uiContext.getString(R.string.common_ds), selected == RomLibrary.Filter.DS) { onSelect(RomLibrary.Filter.DS) } }
-        item { LibraryFilterChip(uiContext.getString(R.string.common_dsiware), selected == RomLibrary.Filter.DSIWARE) { onSelect(RomLibrary.Filter.DSIWARE) } }
-        item {
-            LibraryFilterChip(
-                label = uiContext.getString(R.string.library_ra),
-                active = selected == RomLibrary.Filter.RETRO_ACHIEVEMENTS,
-                icon = Icons.Rounded.EmojiEvents,
-                iconTint = SeedlessColors.gold,
-                onClick = { onSelect(RomLibrary.Filter.RETRO_ACHIEVEMENTS) },
-            )
-        }
+        Box(Modifier.padding(end = 16.dp)) { trailing() }
     }
 }
 
