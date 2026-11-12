@@ -139,7 +139,8 @@ class ExtSurfaceView(context: Context, private val lowLatency: Boolean) : Surfac
             }
             MotionEvent.ACTION_MOVE -> {
                 for (i in 0 until event.pointerCount) {
-                    stylusInput.move(event.getPointerId(i).toLong(), event.getX(i), event.getY(i), rect)
+                    val acquired = stylusInput.move(event.getPointerId(i).toLong(), event.getX(i), event.getY(i), rect)
+                    if (acquired && lowLatency) requestUnbufferedDispatch(event)
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> stylusInput.up(event.getPointerId(index).toLong())

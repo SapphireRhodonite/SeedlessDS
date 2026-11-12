@@ -16,17 +16,18 @@ internal class StylusInput(private val send: (Boolean, Int) -> Unit) {
         return true
     }
 
-    fun move(id: Long, x: Float, y: Float, rect: FloatArray) {
-        if (pointerId == null && id in pendingPointers && contains(x, y, rect)) {
+    fun move(id: Long, x: Float, y: Float, rect: FloatArray): Boolean {
+        if (!contains(x, y, rect)) return false
+        val acquired = pointerId == null && id in pendingPointers
+        if (acquired) {
             pointerId = id
             pendingPointers.clear()
         }
-        if (pointerId != id) return
-        if (contains(x, y, rect)) {
-            val dx = ((x - rect[0]) / rect[2] * 255f).toInt().coerceIn(0, 255)
-            val dy = ((y - rect[1]) / rect[3] * 191f).toInt().coerceIn(0, 191)
-            send(true, (dx shl 16) or dy)
-        }
+        if (pointerId != id) return false
+        val dx = ((x - rect[0]) / rect[2] * 255f).toInt().coerceIn(0, 255)
+        val dy = ((y - rect[1]) / rect[3] * 191f).toInt().coerceIn(0, 191)
+        send(true, (dx shl 16) or dy)
+        return acquired
     }
 
     fun up(id: Long) {
