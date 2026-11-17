@@ -819,4 +819,5 @@
     <string name="settings_use_alt_app_icon">Use alt app icon</string>
     <string name="settings_alt_app_icon_summary">Use the smiling watermelon on your home screen.</string>
     <string name="settings_alt_app_icon_error">Could not change the app icon. Try again.</string>
+    <string name="microphone_permission_settings">To use the device microphone, allow microphone access in Android settings for SeedlessDS.</string>
 </resources>

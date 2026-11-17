@@ -86,15 +86,27 @@ object KeyMap {
     fun specialKeyCodeOf(ctx: Context, fn: Int): Int =
         ctx.getSharedPreferences(PREFS, 0).getInt(sKey(activeProfile(ctx), fn), -1)
 
-    fun setSpecialMapping(ctx: Context, fn: Int, keyCode: Int) {
+    private fun assign(ctx: Context, target: String, keyCode: Int) {
         val p = ctx.getSharedPreferences(PREFS, 0)
+        migrate(p)
         val prof = activeProfile(ctx)
-        val e = p.edit()
-        for (sp in specials) if (sp.fn != fn && p.getInt(sKey(prof, sp.fn), -1) == keyCode) e.remove(sKey(prof, sp.fn))
-        for (b in buttons) if (p.getInt(key(prof, b.index), defaults[b.index] ?: -1) == keyCode) e.remove(key(prof, b.index))
-        e.putInt(sKey(prof, fn), keyCode).apply()
+        val editor = p.edit()
+        for (button in buttons) {
+            val binding = key(prof, button.index)
+            if (binding != target && p.getInt(binding, defaults[button.index] ?: -1) == keyCode) {
+                editor.putInt(binding, -1)
+            }
+        }
+        for (special in specials) {
+            val binding = sKey(prof, special.fn)
+            if (binding != target && p.getInt(binding, -1) == keyCode) editor.remove(binding)
+        }
+        editor.putInt(target, keyCode).apply()
         load(ctx)
     }
+
+    fun setSpecialMapping(ctx: Context, fn: Int, keyCode: Int) =
+        assign(ctx, sKey(activeProfile(ctx), fn), keyCode)
 
     fun clearSpecialMapping(ctx: Context, fn: Int) {
         ctx.getSharedPreferences(PREFS, 0).edit().remove(sKey(activeProfile(ctx), fn)).apply()
@@ -104,15 +116,8 @@ object KeyMap {
     fun keyCodeOf(ctx: Context, dsIndex: Int): Int =
         ctx.getSharedPreferences(PREFS, 0).getInt(key(activeProfile(ctx), dsIndex), defaults[dsIndex] ?: -1)
 
-    fun setMapping(ctx: Context, dsIndex: Int, keyCode: Int) {
-        val p = ctx.getSharedPreferences(PREFS, 0)
-        val prof = activeProfile(ctx)
-        val e = p.edit()
-        for (b in buttons) if (b.index != dsIndex &&
-            p.getInt(key(prof, b.index), defaults[b.index] ?: -1) == keyCode) e.remove(key(prof, b.index))
-        e.putInt(key(prof, dsIndex), keyCode).apply()
-        load(ctx)
-    }
+    fun setMapping(ctx: Context, dsIndex: Int, keyCode: Int) =
+        assign(ctx, key(activeProfile(ctx), dsIndex), keyCode)
 
     fun clearMapping(ctx: Context, dsIndex: Int) {
         ctx.getSharedPreferences(PREFS, 0).edit().putInt(key(activeProfile(ctx), dsIndex), -1).apply()

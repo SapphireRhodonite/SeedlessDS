@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,13 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.focusable
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.type
-import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -296,16 +289,12 @@ private fun KeyNamerDialog(profile: Int, onDismiss: () -> Unit, onNamed: () -> U
 @Composable
 private fun CaptureOverlay(label: String, onCancel: () -> Unit, onKey: (Int) -> Unit) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
-    val fr = remember { FocusRequester() }
-    LaunchedEffect(label) { fr.requestFocus() }
+    LifecycleResumeEffect(onKey) {
+        KeyCapture.onKey = onKey
+        onPauseOrDispose { if (KeyCapture.onKey === onKey) KeyCapture.onKey = null }
+    }
     Box(
         Modifier.fillMaxSize()
-            .focusRequester(fr)
-            .focusable()
-            .onPreviewKeyEvent { ev ->
-                if (ev.type == KeyEventType.KeyDown) onKey(ev.nativeKeyEvent.keyCode)
-                true
-            }
             .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f))
             .clickable(enabled = false) {},
         contentAlignment = Alignment.Center

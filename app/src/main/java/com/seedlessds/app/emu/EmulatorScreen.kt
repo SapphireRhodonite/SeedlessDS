@@ -141,6 +141,7 @@ fun EmulatorScreen(
     onApplySettings: (DsSettings) -> Unit,
     onApplyPerGame: (DsSettings) -> Unit,
     onClearPerGame: () -> Unit,
+    onEnableMicrophone: () -> Unit,
     onMenuVisibilityChange: (Boolean) -> Unit = {},
     gameIcon: androidx.compose.ui.graphics.ImageBitmap? = null,
     gameCoverUrl: String? = null,
@@ -267,18 +268,21 @@ fun EmulatorScreen(
         }
 
         if (overlay == Overlay.NONE) {
+            val topRect = remember(editingControls, rectTick) { glView.topScreenRect }
+            val botRect = remember(editingControls, rectTick) { glView.bottomScreenRect }
+            val swapped = editingControls && SettingsRepo.current.swapScreens && topRect[2] > 0f && botRect[2] > 0f
             if (editingControls) {
                 Box(Modifier.fillMaxSize()
                     .background(Color(0x66000000))
                     .pointerInput(Unit) { detectTapGestures { selectedId = null } })
-                val topRect = remember(rectTick) { glView.topScreenRect }
-                val botRect = remember(rectTick) { glView.bottomScreenRect }
-                ScreenEditHandle("screenTop", uiContext.getString(R.string.common_top_2), topRect, selectedId == "screenTop", canvasPx,
+                ScreenEditHandle("screenTop", uiContext.getString(if (swapped) R.string.common_bottom_2 else R.string.common_top_2),
+                    if (swapped) botRect else topRect, selectedId == "screenTop", canvasPx,
                     onSelect = { selectedId = "screenTop" }) { dx, dy ->
                     ControlLayout.topOffX += dx; ControlLayout.topOffY += dy
                     glView.applyDisplaySettings(); rectTick++
                 }
-                ScreenEditHandle("screenBot", uiContext.getString(R.string.common_bottom_2), botRect, selectedId == "screenBot", canvasPx,
+                ScreenEditHandle("screenBot", uiContext.getString(if (swapped) R.string.common_top_2 else R.string.common_bottom_2),
+                    if (swapped) topRect else botRect, selectedId == "screenBot", canvasPx,
                     onSelect = { selectedId = "screenBot" }) { dx, dy ->
                     ControlLayout.botOffX += dx; ControlLayout.botOffY += dy
                     glView.applyDisplaySettings(); rectTick++
@@ -338,7 +342,8 @@ fun EmulatorScreen(
                         EditSizeBar(
                             modifier = Modifier.padding(top = 6.dp),
                             label = when (sel) {
-                                "screenTop" -> uiContext.getString(R.string.common_top_screen); "screenBot" -> uiContext.getString(R.string.common_bottom_screen)
+                                "screenTop" -> uiContext.getString(if (swapped) R.string.common_bottom_screen else R.string.common_top_screen)
+                                "screenBot" -> uiContext.getString(if (swapped) R.string.common_top_screen else R.string.common_bottom_screen)
                                 "extScreen" -> uiContext.getString(R.string.menu_external_screen); else -> sel
                             },
                             value = curValue.coerceIn(range.start, range.endInclusive),
@@ -409,6 +414,7 @@ fun EmulatorScreen(
                     onSave = { settings = it; onApplySettings(it) },
                     onOpenKeyMapper = { overlay = Overlay.KEYMAP },
                     onOpenMappingInfo = { overlay = Overlay.MAPPING_INFO },
+                    onEnableMicrophone = onEnableMicrophone,
                     onOpenSystemTools = { overlay = Overlay.SYSTEM_TOOLS },
                     onBack = { overlay = Overlay.MENU },
                     gameRunning = true,
@@ -420,6 +426,7 @@ fun EmulatorScreen(
                     onSave = { perGame = it; onApplyPerGame(it) },
                     onOpenKeyMapper = { overlay = Overlay.KEYMAP },
                     onOpenMappingInfo = { overlay = Overlay.MAPPING_INFO },
+                    onEnableMicrophone = onEnableMicrophone,
                     onOpenSystemTools = { overlay = Overlay.SYSTEM_TOOLS },
                     onBack = { overlay = Overlay.MENU },
                     gameRunning = true,

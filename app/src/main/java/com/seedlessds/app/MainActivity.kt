@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.seedlessds.app.emu.DeviceMicrophonePermission
 import com.seedlessds.app.emu.ExternalIdleInfo
 import com.seedlessds.app.emu.LibraryKeyRouter
 import com.seedlessds.app.emu.MenuKeyRouter
@@ -28,6 +29,7 @@ import com.seedlessds.app.emu.SettingsHost
 
 class MainActivity : ComponentActivity() {
 
+    private val microphone = DeviceMicrophonePermission(this)
     private val refresh = mutableIntStateOf(0)
     private val externalInfo by lazy { ExternalInfoController(this) }
 
@@ -62,7 +64,7 @@ class MainActivity : ComponentActivity() {
                     var settingsGameKey by remember { mutableStateOf<String?>(null) }
 
                     if (inSettings) {
-                        SettingsHost(gameKey = settingsGameKey) { inSettings = false }
+                        SettingsHost(gameKey = settingsGameKey, onEnableMicrophone = microphone::requestFromSettings) { inSettings = false }
                     } else {
                         LibraryScreen(
                             refreshKey = refresh.intValue,

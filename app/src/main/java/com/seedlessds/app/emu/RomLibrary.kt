@@ -77,6 +77,9 @@ object RomLibrary {
     }
 
 
+    private fun isCartridgeImage(name: String): Boolean =
+        name.endsWith(".nds", true) || name.endsWith(".srl", true)
+
     fun scan(ctx: Context): List<RomEntry> {
         val t0 = android.os.SystemClock.elapsedRealtime()
         val out = ArrayList<RomEntry>()
@@ -98,7 +101,7 @@ object RomLibrary {
                         val n = c.getString(1) ?: continue
                         if (c.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR) continue
                         if (n.endsWith("-crash.zip", true)) continue
-                        if (n.endsWith(".nds", true) || n.endsWith(".zip", true) || n.endsWith(".7z", true) || n.endsWith(".rar", true))
+                        if (isCartridgeImage(n) || n.endsWith(".zip", true) || n.endsWith(".7z", true) || n.endsWith(".rar", true))
                             out.add(RomEntry(DocumentsContract.buildDocumentUriUsingTree(t, id), n, t,
                                 if (c.isNull(3)) null else c.getLong(3), if (c.isNull(4)) null else c.getLong(4)))
                     }
@@ -281,7 +284,7 @@ object RomLibrary {
 
     fun info(ctx: Context, e: RomEntry): NdsInfo {
         iconCache[e.uri.toString()]?.let { return it }
-        val info = if (e.name.endsWith(".nds", true)) {
+        val info = if (isCartridgeImage(e.name)) {
             NdsRom.read(ctx, e.uri).takeUnless { it.title.isBlank() && it.icon == null }
                 ?: runCatching { ctx.contentResolver.openInputStream(e.uri)?.let { NdsRom.read(it) } }.getOrNull()
                 ?: NdsInfo(e.title, null)

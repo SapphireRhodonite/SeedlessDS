@@ -145,6 +145,7 @@ private val SettingsMaxWidth = 680.dp
 fun SettingsScreen(
     initial: DsSettings,
     onSave: (DsSettings) -> Unit,
+    onEnableMicrophone: () -> Unit,
     onOpenKeyMapper: () -> Unit,
     onOpenMappingInfo: () -> Unit,
     onOpenSystemTools: () -> Unit,
@@ -308,7 +309,7 @@ fun SettingsScreen(
                         1 -> ScreenSettings(s, setS, subPage) { subPage = it }
                         2 -> TouchSettings(s, setS, gameRunning)
                         3 -> PadSettings(s, setS, { onSave(s); onOpenKeyMapper() }, { onSave(s); onOpenMappingInfo() })
-                        4 -> AudioSettings(s, setS)
+                        4 -> AudioSettings(s, setS, onEnableMicrophone)
                         5 -> SystemSettings(s, setS)
                         6 -> SaveSettings(s, setS)
                         7 -> AdvancedSettings(s, setS, !perGame, { uiContext.startActivity(android.content.Intent(uiContext, MultiplayerActivity::class.java)) }, { onSave(s); onOpenSystemTools() })
@@ -583,7 +584,7 @@ fun SettingsScreen(
         s.disableMapped) { set(s.copy(disableMapped = it)) }
 }
 
-@Composable private fun AudioSettings(s: DsSettings, set: (DsSettings) -> Unit) {
+@Composable private fun AudioSettings(s: DsSettings, set: (DsSettings) -> Unit, onEnableMicrophone: () -> Unit) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
     val options = androidx.compose.runtime.remember(uiContext, androidx.compose.ui.platform.LocalConfiguration.current) { SettingsOptions(uiContext) }
     Group(uiContext.getString(R.string.settings_sound))
@@ -596,7 +597,10 @@ fun SettingsScreen(
 
     Group(uiContext.getString(R.string.settings_microphone))
     SwitchRow(uiContext.getString(R.string.settings_use_device_microphone), uiContext.getString(R.string.settings_uses_the_real_microphone_for_games_that),
-        s.micEnabled) { set(s.copy(micEnabled = it)) }
+        s.micEnabled) { enabled ->
+        set(s.copy(micEnabled = enabled))
+        if (enabled) onEnableMicrophone()
+    }
     DropdownRow(uiContext.getString(R.string.settings_microphone_level), uiContext.getString(R.string.settings_microphone_capture_sensitivity),
         options.micLevel, s.micLevel) { set(s.copy(micLevel = it)) }
 }

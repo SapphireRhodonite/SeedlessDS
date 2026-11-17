@@ -8,6 +8,7 @@ import com.seedlessds.app.R
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
@@ -58,7 +59,7 @@ class MultiplayerViewModel(application: Application) : AndroidViewModel(applicat
     private val mutableJoining = MutableStateFlow<Nearby?>(null)
     private val mutableJoinStep = MutableStateFlow(0)
     private val catalog by lazy { MultiplayerCatalog(context.resources) }
-    private val cartridgeIndex by lazy { CartridgeIndex(context) }
+    private val cartridgeIndex by lazy { CartridgeIndex(context, catalog) }
     private var libraryJob: Job? = null
     private var lease: Any? = null
 
@@ -144,7 +145,7 @@ class MultiplayerViewModel(application: Application) : AndroidViewModel(applicat
                     result == 0
                 }
             } catch (error: Exception) {
-                if (error is CancellationException) throw error
+                if (error is CancellationException && error !is TimeoutCancellationException) throw error
                 com.seedlessds.app.AppLog.e("Multiplayer", "Could not open the room", error)
                 mutableFailure.value = Failure.Message(R.string.multiplayer_direct_failed)
                 false
@@ -184,7 +185,7 @@ class MultiplayerViewModel(application: Application) : AndroidViewModel(applicat
                 if (result != 0) mutableFailure.value = Failure.Message(code(result))
                 result == 0
             } catch (error: Exception) {
-                if (error is CancellationException) throw error
+                if (error is CancellationException && error !is TimeoutCancellationException) throw error
                 com.seedlessds.app.AppLog.e("Multiplayer", "Could not join the room", error)
                 mutableFailure.value = Failure.Direct(room)
                 false
@@ -206,7 +207,7 @@ class MultiplayerViewModel(application: Application) : AndroidViewModel(applicat
                 if (result != 0) mutableFailure.value = Failure.Message(code(result))
                 result == 0
             } catch (error: Exception) {
-                if (error is CancellationException) throw error
+                if (error is CancellationException && error !is TimeoutCancellationException) throw error
                 mutableFailure.value = Failure.Message(R.string.multiplayer_direct_stop_failed)
                 false
             } finally {
@@ -263,7 +264,7 @@ class MultiplayerViewModel(application: Application) : AndroidViewModel(applicat
             libraryLock.withLock {
                 val games = roms.value
                 val current = games.firstOrNull { it.uri == rom?.uri } ?: return@withLock null
-                val id = CartridgeId.read(context, current.entry)
+                val id = CartridgeId.read(context, current.entry, catalog)
                 if (id != current.cartridge) {
                     cartridgeIndex.invalidate(current.uri)
                     mutableRoms.value = if (id?.unitCode == 3) games - current

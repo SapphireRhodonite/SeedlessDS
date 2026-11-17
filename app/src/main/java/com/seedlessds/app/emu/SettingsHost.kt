@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun SettingsHost(gameKey: String?, onExit: () -> Unit) {
+fun SettingsHost(gameKey: String?, onEnableMicrophone: () -> Unit, onExit: () -> Unit) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
     val ctx = LocalContext.current
     var sub by remember { mutableIntStateOf(0) }
@@ -28,6 +28,7 @@ fun SettingsHost(gameKey: String?, onExit: () -> Unit) {
         3 -> SystemToolsScreen { sub = 0 }
         else -> SettingsScreen(
             initial = s,
+            onEnableMicrophone = onEnableMicrophone,
             onSave = { new ->
                 s = new
                 if (gameKey == null) SettingsRepo.saveGlobal(ctx, new, false)

@@ -262,7 +262,7 @@ object MultiplayerRoom {
         if (current.role != Role.HOST) return
         val next = info.copy(generation = info.generation + 1)
         mutableState.value = current.copy(info = next)
-        scope.launch {
+        room?.launch {
             broadcast()
             val line = JSONObject().put("t", "start").put("room", next.toJson()).toString()
             clients.values.filter { it.member != null }.forEach { write(it, line) }
@@ -440,6 +440,7 @@ object MultiplayerRoom {
                         "start" -> {
                             val info = Info.fromJson(message.getJSONObject("room"))
                             mutableState.update { it?.copy(info = info) }
+                            if (guest !== socket || room == null) break
                             mutableStarts.tryEmit(info)
                         }
                         "close" -> {

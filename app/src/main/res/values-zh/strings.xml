@@ -706,4 +706,5 @@
     <string name="settings_use_alt_app_icon">使用备用应用图标</string>
     <string name="settings_alt_app_icon_summary">在主屏幕上使用微笑的西瓜图标。</string>
     <string name="settings_alt_app_icon_error">无法更改应用图标，请重试。</string>
+    <string name="microphone_permission_settings">如需使用设备麦克风，请在 Android 的 SeedlessDS 应用权限设置中允许使用麦克风。</string>
 </resources>

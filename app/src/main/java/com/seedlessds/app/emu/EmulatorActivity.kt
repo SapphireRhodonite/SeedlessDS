@@ -30,6 +30,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.seedlessds.app.filesystem.PathCache
 
 open class EmulatorActivity : ComponentActivity() {
+    private val microphone = DeviceMicrophonePermission(this)
     private var phantom: PhantomPlayer? = null
     private var releasingPlayer = false
     private val reconSlot = java.util.concurrent.atomic.AtomicInteger(0)
@@ -197,6 +198,7 @@ open class EmulatorActivity : ComponentActivity() {
 
         glView = DsGlView(this, SettingsRepo.current.lowLatency && !MultiplayerSession.active)
 
+        microphone.attachGame()
         RuntimeControl.attach(this)
 
 
@@ -204,6 +206,7 @@ open class EmulatorActivity : ComponentActivity() {
             SeedlessTheme(isDarkTheme = true) {
                 EmulatorScreen(
                     glView = glView,
+                    onEnableMicrophone = microphone::requestFromSettings,
                     initialSettings = SettingsRepo.global,
                     initialPerGame = SettingsRepo.current,
                     gameTitle = gameBase,
@@ -547,6 +550,16 @@ open class EmulatorActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         com.seedlessds.app.AppLog.i(TAG, "onPause")
+        if (microphone.pending && MultiplayerSession.active) return
+        pauseEmulation()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (appForeground) pauseEmulation()
+    }
+
+    private fun pauseEmulation() {
         commitPlayTime()
         stopCpuLoad()
         appForeground = false
@@ -573,6 +586,7 @@ open class EmulatorActivity : ComponentActivity() {
         cancelResumeNotification()
         startCpuLoad()
         appForeground = true
+        microphone.resumeGame()
         phantom?.let {
             it.visibility(true)
             if (inited) SeedlessCore.audioVolume(SettingsRepo.current.volume * 10)
@@ -631,6 +645,7 @@ open class EmulatorActivity : ComponentActivity() {
     private fun closeEmulation() {
         if (isClosing || !inited) return
         isClosing = true
+        microphone.detachGame()
         val completion = kotlinx.coroutines.CompletableDeferred<Unit>()
         pendingClose = completion
         setExternalInfoMode(null)

@@ -564,11 +564,10 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
                 if (showingBottom) { bottomScreenRect = r; topScreenRect = zero }
                 else { topScreenRect = r; bottomScreenRect = zero }
             } else {
-                var slot0 = rawTop
-                var slot1 = rawBot
-                if (cfg.swapScreens) { val t = slot0; slot0 = slot1; slot1 = t }
-                val topRect = xform(slot0, w, h, ControlLayout.topScale, ControlLayout.topOffX, ControlLayout.topOffY)
-                val botRect = xform(slot1, w, h, ControlLayout.botScale, ControlLayout.botOffX, ControlLayout.botOffY)
+                val firstSlot = xform(rawTop, w, h, ControlLayout.topScale, ControlLayout.topOffX, ControlLayout.topOffY)
+                val secondSlot = xform(rawBot, w, h, ControlLayout.botScale, ControlLayout.botOffX, ControlLayout.botOffY)
+                val topRect = if (cfg.swapScreens) secondSlot else firstSlot
+                val botRect = if (cfg.swapScreens) firstSlot else secondSlot
                 System.arraycopy(quadNdc(w, h, topRect), 0, geo, 0, 12)
                 System.arraycopy(quadNdc(w, h, botRect), 0, geo, 12, 12)
                 topPxW = topRect[2].toInt(); topPxH = topRect[3].toInt()
@@ -588,6 +587,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
             if (!nativeDelivery() || !SettingsRepo.current.hires3D) return
             val ps = runCatching { SeedlessCore.pageScale() }.getOrDefault(0)
             if (ps < 1 || ps > 8 || ps == pageScaleShown) return
+            if (topTex2 != 0) acquireExternalTextures(false, topTex2, bottomTex2)
             pageScaleShown = ps; dimsCache = null
             createScreenTexture(topTex); createScreenTexture(bottomTex)
             if (topTex2 != 0) { createScreenTexture(topTex2); createScreenTexture(bottomTex2) }
@@ -647,6 +647,8 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
             if (key == displayKey) return
             displayKey = key
             if (cfg.hires3D != texHires || cfg.gl16bit != tex16) {
+                acquireExternalTextures(false)
+                if (topTex2 != 0) acquireExternalTextures(false, topTex2, bottomTex2)
                 createScreenTexture(topTex); createScreenTexture(bottomTex)
                 texHires = cfg.hires3D; tex16 = cfg.gl16bit
                 SeedlessCore.clearScreens(topTex, bottomTex)
@@ -748,25 +750,24 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
             return externalThread
         }
 
-        private fun acquireExternalTextures(waitForPending: Boolean) {
-            externalThread?.acquire(topTex, bottomTex, waitForPending)?.let { v ->
-                if (waitForPending && v != android.opengl.EGL15.EGL_NO_SYNC &&
+        private fun acquireExternalTextures(clientWait: Boolean, top: Int = topTex, bottom: Int = bottomTex) {
+            externalThread?.acquire(top, bottom)?.let { v ->
+                if (clientWait && v != android.opengl.EGL15.EGL_NO_SYNC &&
                     android.opengl.EGL15.eglClientWaitSync(dpy14, v, 0, 16_666_667L) == android.opengl.EGL14.EGL_FALSE) {
                     com.seedlessds.app.AppLog.w("reconDS", "EXTERNAL: consumer fence wait 0x${Integer.toHexString(android.opengl.EGL14.eglGetError())}")
                 }
-                android.opengl.EGL15.eglWaitSync(dpy14, v, 0)
-                runCatching { android.opengl.EGL15.eglDestroySync(dpy14, v) }
+                check(waitForTextureFence(dpy14, v)) { "External consumer fence wait failed" }
             }
         }
 
-        private fun publishExternal(outputToken: Long, separateWindow: Boolean) {
-            val ext = externalThread ?: return
+        private fun publishExternal(outputToken: Long) {
+            val ext = externalThread?.takeIf { it.isAlive } ?: return
             frame++
             val (sw, sh) = srcDims()
             val v = android.opengl.EGL15.eglCreateSync(dpy14, android.opengl.EGL15.EGL_SYNC_FENCE, longArrayOf(android.opengl.EGL14.EGL_NONE.toLong()), 0)
-            if (separateWindow && (v == null || v == android.opengl.EGL15.EGL_NO_SYNC)) GLES20.glFinish()
-            GLES20.glFlush()
-            ext.publish(frame, v, topTex, bottomTex, sw, sh, outputToken)
+            val ready = v?.takeUnless { it == android.opengl.EGL15.EGL_NO_SYNC }
+            if (ready == null) GLES20.glFinish() else GLES20.glFlush()
+            ext.publish(frame, ready, topTex, bottomTex, sw, sh, outputToken)
         }
 
         private var overlayRgb8 = false
@@ -851,7 +852,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
             val outputToken = SeedlessCore.fxRender(topTex, bottomTex, 0, 6, 18, topPxW, topPxH, botPxW, botPxH, false)
             val ringFrame = frame
             val publishBeforeWindow = outputPacing && fboRet != 0
-            if (publishBeforeWindow) publishExternal(outputToken, true)
+            if (publishBeforeWindow) publishExternal(outputToken)
             if (fboRet != 0) {
                 com.seedlessds.app.SeedlessBridge.fboDest(0)
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
@@ -865,7 +866,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
                     output.submit(lastScreenTexture, viewW, viewH, if (overlaySupported) performanceOverlay else null, true)
                 }
             }
-            if (!publishBeforeWindow) publishExternal(outputToken, false)
+            if (!publishBeforeWindow) publishExternal(outputToken)
             if (lowLatency && internalOutput == null) drawPerformanceOverlay()
             val tEnd = android.os.SystemClock.elapsedRealtimeNanos()
             if (probeTimes && probeTotal in probeSince..(probeSince + 1200)) com.seedlessds.app.AppLog.i("reconDS",

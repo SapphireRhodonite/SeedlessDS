@@ -537,6 +537,32 @@ Java_com_seedlessds_core_SeedlessCore_romHeader(JNIEnv *env, jclass cls, jstring
     return result;
 }
 
+JNIEXPORT jbyteArray JNICALL
+Java_com_seedlessds_core_SeedlessCore_romSection(JNIEnv *env, jclass cls, jstring path, jstring name,
+                                                jint offset, jint size)
+{
+    (void)cls;
+    if (!path || !name || offset < 0 || size <= 0 || size > 16 * 1024 * 1024) return NULL;
+    const char *source = (*env)->GetStringUTFChars(env, path, NULL);
+    if (source == NULL) return NULL;
+    const char *file_name = (*env)->GetStringUTFChars(env, name, NULL);
+    uint8_t *data = NULL;
+    int count = -1;
+    if (file_name != NULL) {
+        data = malloc((size_t)size);
+        if (data != NULL) count = nds_rom_read_section(source, file_name, offset, data, size);
+        (*env)->ReleaseStringUTFChars(env, name, file_name);
+    }
+    (*env)->ReleaseStringUTFChars(env, path, source);
+    jbyteArray result = NULL;
+    if (count >= 0 && !(*env)->ExceptionCheck(env)) {
+        result = (*env)->NewByteArray(env, count);
+        if (result != NULL && count > 0) (*env)->SetByteArrayRegion(env, result, 0, count, (const jbyte *)data);
+    }
+    free(data);
+    return result;
+}
+
 JNIEXPORT jboolean JNICALL
 Java_com_seedlessds_core_SeedlessCore_romIsNds(JNIEnv *env, jclass cls, jstring path)
 {

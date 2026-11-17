@@ -38,6 +38,7 @@ object SeedlessCore {
     @JvmStatic external fun release()
 
     @JvmStatic external fun romHeader(path: String, name: String): ByteArray?
+    @JvmStatic external fun romSection(path: String, name: String, offset: Int, size: Int): ByteArray?
     @JvmStatic external fun romIsNds(path: String): Boolean
     @JvmStatic external fun romType(path: String): Int
     @JvmStatic external fun romSize(path: String): Long
@@ -84,6 +85,7 @@ object SeedlessCore {
     @JvmStatic external fun accelerometer(x: Float, y: Float, z: Float)
     @JvmStatic external fun gyroscope(rotation: Float)
     @JvmStatic external fun rumble(): Boolean
+    @JvmStatic external fun retryMicrophonePermission()
     @JvmStatic external fun whitenoise(on: Boolean)
     @JvmStatic external fun hinge(closed: Boolean)
 

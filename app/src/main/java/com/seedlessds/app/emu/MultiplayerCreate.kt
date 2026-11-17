@@ -403,7 +403,7 @@ private fun GameStep(
     val grid = rememberLazyGridState()
     val repeatedTitles = remember(library) { library.groupingBy(::romDisplayName).eachCount().filterValues { it > 1 }.keys }
     val repeatedCartridges = remember(library) {
-        library.mapNotNull { it.cartridge }.groupingBy { it }.eachCount()
+        library.mapNotNull { it.cartridge?.copy(contentHash = null) }.groupingBy { it }.eachCount()
             .filter { (id, count) -> id.gameCode.isNotBlank() && count > 1 }.keys
     }
     val letters = remember(shown) { shown.mapNotNull { letterOf(it) }.distinct() }
@@ -497,7 +497,7 @@ private fun GameStep(
                                 }
                             }
                         }
-                        val showFileName = item.cartridge in repeatedCartridges || name in repeatedTitles
+                        val showFileName = item.cartridge?.copy(contentHash = null) in repeatedCartridges || name in repeatedTitles
                         val detail = when {
                             showFileName -> item.fileName
                             filter == 1 && item.lastPlayed != null -> context.getString(R.string.mp_last_played,

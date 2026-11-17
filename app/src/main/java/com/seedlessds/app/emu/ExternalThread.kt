@@ -67,14 +67,21 @@ internal class ExternalThread(
     )
     private val QUAD_FULL = floatArrayOf(-1f, 1f, -1f, -1f, 1f, -1f, -1f, 1f, 1f, -1f, 1f, 1f)
 
-    fun publish(n: Long, v: EGLSync, top: Int, bottom: Int, sw: Int, sh: Int, token: Long) = synchronized(lock) {
+    fun publish(n: Long, v: EGLSync?, top: Int, bottom: Int, sw: Int, sh: Int, token: Long) = synchronized(lock) {
         fence?.let { runCatching { EGL15.eglDestroySync(dpy, it) } }
         if (pending) skipped++
         pending = true; number = n; outputToken = token; fence = v; topTex = top; bottomTex = bottom; srcW = sw; srcH = sh
         lock.notifyAll()
     }
 
-    fun terminate() { synchronized(lock) { quit = true; lock.notifyAll() }; join() }
+    fun terminate() {
+        synchronized(lock) { quit = true; lock.notifyAll() }
+        join()
+        fence?.let { EGL15.eglDestroySync(dpy, it) }
+        fence = null
+        externalFence?.let { EGL15.eglDestroySync(dpy, it) }
+        externalFence = null
+    }
 
     override fun run() {
         val out = arrayOfNulls<EGLConfig>(1); val num = IntArray(1)
@@ -152,13 +159,7 @@ internal class ExternalThread(
         try {
             output.acquire()
             ready = null
-            if (v != null && v != EGL15.EGL_NO_SYNC) try {
-                if (!EGL15.eglWaitSync(dpy, v, 0)) {
-                    check(EGL15.eglClientWaitSync(dpy, v, 0, EGL15.EGL_FOREVER) == EGL15.EGL_CONDITION_SATISFIED) {
-                        "External source fence wait failed"
-                    }
-                }
-            } finally { EGL15.eglDestroySync(dpy, v) }
+            check(v == null || waitForTextureFence(dpy, v)) { "External source fence wait failed" }
             val r = ExternalLayout.rect(geometry.width, geometry.height)
             prepareChain(geometry.width, geometry.height, r, sw, sh, true)
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, output.framebuffer)
@@ -342,7 +343,11 @@ internal class ExternalThread(
 
     private fun drawIt(snap: ExternalSurface.Snap, n: Long, v: EGLSync?, top: Int, bottom: Int, sw: Int, sh: Int): Boolean {
         if (!ensureSurface(snap)) { v?.let { runCatching { EGL15.eglDestroySync(dpy, it) } }; return false }
-        if (n == lastDrawn) { repeated++; return false }
+        if (n == lastDrawn) {
+            repeated++
+            v?.let { EGL15.eglDestroySync(dpy, it) }
+            return false
+        }
         val submittedOutputToken = activeOutputToken
         val useOutputFence = submittedOutputToken != 0L
         if (!useOutputFence && outputPipeline != null) {
@@ -361,7 +366,10 @@ internal class ExternalThread(
             releaseSurface()
             return false
         }
-        v?.let { EGL15.eglWaitSync(dpy, it, 0); runCatching { EGL15.eglDestroySync(dpy, it) } }
+        if (v != null && !waitForTextureFence(dpy, v)) {
+            com.seedlessds.app.AppLog.e("reconDS", "External source fence wait failed")
+            return false
+        }
         val r = ExternalLayout.rect(snap.width, snap.height)
         val target = separate || useOutputFence && prepareOutputTarget(snap.width, snap.height)
         prepareChain(snap.width, snap.height, r, sw, sh, target)
@@ -401,10 +409,7 @@ internal class ExternalThread(
             if (tex != 0) SeedlessCore.recordOutputBufferAge()
         }
         GLES20.glFlush()
-        if (!inputReleased) {
-            externalFence?.let { runCatching { EGL15.eglDestroySync(dpy, it) } }
-            externalFence = own
-        }
+        if (!inputReleased) releaseInput(own?.takeUnless { it == EGL15.EGL_NO_SYNC })
         if (useOutputFence && tex != 0) SeedlessCore.refreshOutputGpu(submittedOutputToken)
         val swapped = EGL14.eglSwapBuffers(dpy, surface)
         if (!swapped) { com.seedlessds.app.AppLog.e("reconDS", "EXTERNAL-THREAD: swap 0x${Integer.toHexString(EGL14.eglGetError())}"); releaseSurface() }
@@ -444,11 +449,20 @@ internal class ExternalThread(
 
 
 
-    fun acquire(top: Int, bottom: Int, waitForPending: Boolean = false): EGLSync? = synchronized(lock) {
-        while (!quit && (busyTop == top || busyBottom == bottom
-                || (waitForPending && pending && (topTex == top || bottomTex == bottom)))) runCatching { lock.wait(20) }
-        val v = externalFence; externalFence = null; v
+    fun acquire(top: Int, bottom: Int): EGLSync? = synchronized(lock) {
+        while (!quit && isAlive && (busyTop == top || busyBottom == bottom
+                || pending && (topTex == top || bottomTex == bottom))) runCatching { lock.wait(20) }
+        val consumed = externalFence
+        externalFence = null
+        consumed
     }
+}
+
+internal fun waitForTextureFence(display: EGLDisplay, fence: EGLSync): Boolean = try {
+    EGL15.eglWaitSync(display, fence, 0) ||
+        EGL15.eglClientWaitSync(display, fence, 0, EGL15.EGL_FOREVER) == EGL15.EGL_CONDITION_SATISFIED
+} finally {
+    EGL15.eglDestroySync(display, fence)
 }
 
 private class ExternalOutputPipeline(
