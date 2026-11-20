@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -87,24 +88,22 @@ fun GameArt(
     coverUrl: String? = null,
     raIconUrl: String? = null,
     loading: Boolean = false,
-    content: @Composable BoxScope.() -> Unit = {},
+    content: @Composable BoxScope.(coverLoaded: Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     var coverFailed by remember(coverUrl) { mutableStateOf(false) }
     var raFailed by remember(raIconUrl) { mutableStateOf(false) }
-    var artLoaded by remember(coverUrl, raIconUrl) { mutableStateOf(false) }
 
     val activeUrl = when {
         coverUrl != null && !coverFailed -> coverUrl
         raIconUrl != null && !raFailed -> raIconUrl
         else -> null
     }
+    var artLoaded by remember(activeUrl) { mutableStateOf(false) }
     val activeScale = ContentScale.Crop
 
     Box(
-        modifier = modifier
-            .background(gameGradient(title))
-            .let { if (artLoaded) it else it.scanlines() },
+        modifier = modifier.background(gameGradient(title)),
         contentAlignment = Alignment.Center,
     ) {
         if (!artLoaded) {
@@ -159,7 +158,8 @@ fun GameArt(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        content()
+        if (!artLoaded) Spacer(Modifier.matchParentSize().scanlines())
+        content(artLoaded && coverUrl != null && activeUrl == coverUrl)
     }
 }
 

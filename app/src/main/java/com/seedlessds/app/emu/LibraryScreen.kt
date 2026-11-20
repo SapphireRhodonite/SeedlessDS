@@ -843,7 +843,34 @@ private fun GameCard(
             ),
     ) {
         GameArt(entry.title, art.icon, Modifier.fillMaxSize(), showInitial = art.icon == null,
-            coverUrl = art.coverUrl, raIconUrl = art.raIconUrl, loading = art.resolving)
+            coverUrl = art.coverUrl, raIconUrl = art.raIconUrl, loading = art.resolving) { coverLoaded ->
+            if (coverLoaded) {
+                RomIconBadge(art.icon)
+            } else {
+                Box(
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f))
+                            )
+                        )
+                        .padding(start = 8.dp, end = 8.dp, top = 22.dp, bottom = 7.dp),
+                ) {
+                    Text(
+                        text = entry.title,
+                        color = Color.White,
+                        fontFamily = Manrope,
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.TopStart).padding(7.dp),
@@ -872,31 +899,6 @@ private fun GameCard(
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 7.dp).size(13.dp),
             )
         }
-        if (art.coverUrl == null) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f))
-                        )
-                    )
-                    .padding(start = 8.dp, end = 8.dp, top = 22.dp, bottom = 7.dp),
-            ) {
-                Text(
-                    text = entry.title,
-                    color = Color.White,
-                    fontFamily = Manrope,
-                    fontSize = 11.sp,
-                    lineHeight = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        if (art.coverUrl != null) RomIconBadge(art.icon)
     }
 }
 
