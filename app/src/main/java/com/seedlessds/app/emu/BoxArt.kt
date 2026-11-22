@@ -1,218 +1,141 @@
 package com.seedlessds.app.emu
 
-import com.seedlessds.app.R
 import android.content.Context
-import android.util.Log
+import android.util.LruCache
+import coil.request.ImageRequest
+import com.seedlessds.app.AppLog
+import com.seedlessds.app.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.DataInputStream
 import java.io.File
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.util.concurrent.TimeUnit
+import java.io.IOException
+import java.io.InputStream
+import java.math.BigInteger
+import java.security.MessageDigest
+import kotlin.coroutines.CoroutineContext
 
 object BoxArt {
-
     private const val TAG = "BoxArt"
-    private const val BASE = "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%20DS/Named_Boxarts/"
-    private const val NO_MATCH = "-"
-    private val INDEX_TTL_MS = TimeUnit.DAYS.toMillis(30)
-
-    private const val BUNDLED_INDEX = "boxart_index.txt"
-
-    private val client by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
-    }
-
+    private const val MAX_ROM_BYTES = 512L * 1024 * 1024
     private val indexLock = Mutex()
+    private val fileReaders = Semaphore(2)
+    private val matches = LruCache<RomLibrary.RomEntry, BoxArtCatalog.Cover>(512)
+
+    @Volatile private var index: BoxArtCatalogs? = null
+    @Volatile private var indexAttempted = false
+    @Volatile private var legacyCache: LegacyBoxArtCache? = null
 
     suspend fun ensureIndex(ctx: Context) {
-        if (index != null || indexFailed || !isEnabled(ctx)) return
+        if (indexAttempted || !isEnabled(ctx)) return
         indexLock.withLock {
-            if (index != null || indexFailed) return
-            withContext(Dispatchers.IO) { loadIndex(ctx) }
-        }
-    }
-
-    suspend fun refreshIndexIfStale(ctx: Context) {
-        if (!isEnabled(ctx)) return
-        val file = File(cacheDir(ctx), "index.txt")
-        if (file.isFile && System.currentTimeMillis() - file.lastModified() < INDEX_TTL_MS) return
-        indexLock.withLock {
+            if (indexAttempted) return
             withContext(Dispatchers.IO) {
-                val fetched = fetchIndex() ?: return@withContext
-                if (fetched.isEmpty()) return@withContext
-                runCatching { file.writeText(fetched.joinToString("\n")) }
-                index = fetched.groupBy(::normalise)
-                indexFailed = false
-                com.seedlessds.app.AppLog.i(TAG, "box art index refreshed: ${fetched.size} covers")
-                lock.withLock {
-                    val store = loadMatches(ctx)
-                    if (store.values.any { it == NO_MATCH }) {
-                        store.entries.removeAll { it.value == NO_MATCH }
-                        persistMatches(ctx, store)
+                index = try {
+                    val json = ctx.assets.open(BoxArtCatalogs.ASSET).bufferedReader().use { JSONObject(it.readText()) }
+                    BoxArtCatalogs.parse(json).also {
+                        AppLog.i(TAG, "Using box art index DS ${it.nds.revision}: ${it.nds.size}, DSiWare ${it.dsiWare.revision}: ${it.dsiWare.size}")
                     }
+                } catch (error: IOException) {
+                    AppLog.i(TAG, "Box art index unavailable: ${error.message}")
+                    null
+                } catch (error: JSONException) {
+                    AppLog.i(TAG, "Invalid box art index: ${error.message}")
+                    null
+                } catch (error: IllegalArgumentException) {
+                    AppLog.i(TAG, "Invalid box art index: ${error.message}")
+                    null
                 }
+                if (index != null) legacyCache = LegacyBoxArtCache(cacheDir(ctx))
+                indexAttempted = true
             }
         }
     }
-
-    private val lock = Mutex()
-
-    @Volatile private var index: Map<String, List<String>>? = null
-    @Volatile private var indexFailed = false
-
-    private var matches: MutableMap<String, String>? = null
-
-    fun cacheDir(ctx: Context): File = File(ctx.filesDir, "boxart").apply { mkdirs() }
 
     suspend fun resolveUrl(ctx: Context, entry: RomLibrary.RomEntry): String? {
         if (!isEnabled(ctx)) return null
-        val key = entry.uri.toString()
-
-        withContext(Dispatchers.IO) { lock.withLock { loadMatches(ctx) } }[key]?.let {
-            return if (it == NO_MATCH) null else BASE + encode(it)
-        }
-
         ensureIndex(ctx)
-        return withContext(Dispatchers.IO) {
-            lock.withLock {
-                val store = loadMatches(ctx)
-                store[key]?.let { return@withLock if (it == NO_MATCH) null else BASE + encode(it) }
+        val catalog = index ?: return null
+        val cacheable = (entry.size ?: 0L) > 0 && (entry.modified ?: 0L) > 0
+        if (cacheable) matches.get(entry)?.let { return it.url }
 
-                val name = resolveName(ctx, entry.title)
-                if (name == null && index == null) return@withLock null
-                store[key] = name ?: NO_MATCH
-                appendMatch(ctx, key, name ?: NO_MATCH)
-                name?.let { BASE + encode(it) }
+        return withContext(Dispatchers.IO) {
+            fileReaders.withPermit {
+                if (cacheable) matches.get(entry)?.let { return@withPermit it.url }
+                val cover = try {
+                    when (entry.name.substringAfterLast('.').lowercase()) {
+                        "nds", "srl" -> ctx.contentResolver.openInputStream(entry.uri)?.use {
+                            resolveCover(it, catalog, coroutineContext)
+                        }
+                        "zip" -> CartridgeId.withZipRom(ctx, entry) { open ->
+                            open().use { resolveCover(it, catalog, coroutineContext) }
+                        }
+                        "7z", "rar" -> CartridgeId.read(ctx, entry)?.let {
+                            catalog.forUnit(it.unitCode)?.fromHeader(it)
+                        }
+                        else -> null
+                    }
+                } catch (_: IOException) {
+                    null
+                } catch (_: SecurityException) {
+                    null
+                }
+                if (cover != null) {
+                    if (legacyCache?.reuse(ctx, entry.uri.toString(), cover) == true) {
+                        AppLog.i(TAG, "Reused verified legacy artwork for ${cover.variant}")
+                    }
+                    if (cacheable) matches.put(entry, cover)
+                    AppLog.i(TAG, "Selected ${cover.variant}: ${cover.url}")
+                }
+                cover?.url
             }
         }
     }
+
+    private fun resolveCover(
+        input: InputStream,
+        catalogs: BoxArtCatalogs,
+        context: CoroutineContext,
+    ): BoxArtCatalog.Cover? {
+        val header = ByteArray(32)
+        DataInputStream(input).readFully(header)
+        val id = CartridgeId.fromHeader(header)
+        val catalog = catalogs.forUnit(id.unitCode) ?: return null
+        catalog.fromHeader(id)?.let { return it }
+        if (!catalog.hasCode(id)) return null
+
+        val digest = MessageDigest.getInstance("SHA-1")
+        digest.update(header)
+        val buffer = ByteArray(128 * 1024)
+        var bytes = header.size.toLong()
+        while (true) {
+            context.ensureActive()
+            val count = input.read(buffer)
+            if (count < 0) break
+            bytes += count
+            if (bytes > MAX_ROM_BYTES) return null
+            digest.update(buffer, 0, count)
+        }
+        return catalog.fromSha1(id, BigInteger(1, digest.digest()).toString(16).padStart(40, '0'))
+    }
+
+    fun imageRequest(ctx: Context, url: String): ImageRequest.Builder =
+        ImageRequest.Builder(ctx).data(url).apply {
+            if (url.startsWith("https://raw.githubusercontent.com/libretro-thumbnails/Nintendo_-_Nintendo_")) {
+                setHeader("Cache-Control", "max-stale=${Int.MAX_VALUE}")
+            }
+        }
 
     fun raIconUrl(ctx: Context, entry: RomLibrary.RomEntry): String? = RomLibrary.raIconUrl(ctx, entry)
 
-    private fun encode(name: String): String =
-        URLEncoder.encode(name, "UTF-8").replace("+", "%20") + ".png"
-
-    private fun loadMatches(ctx: Context): MutableMap<String, String> {
-        matches?.let { return it }
-        val file = File(cacheDir(ctx), "matches.txt")
-        val loaded = HashMap<String, String>()
-        var lines = 0
-        runCatching {
-            if (file.isFile) file.forEachLine { line ->
-                val i = line.indexOf('\t')
-                if (i > 0) {
-                    loaded[line.substring(0, i)] = line.substring(i + 1)
-                    lines++
-                }
-            }
-        }
-        matches = loaded
-        if (loaded.isNotEmpty() && lines > loaded.size * 2) persistMatches(ctx, loaded)
-        return loaded
-    }
-
-    private fun appendMatch(ctx: Context, key: String, value: String) {
-        runCatching {
-            File(cacheDir(ctx), "matches.txt").appendText(key + "\t" + value + "\n")
-        }
-    }
-
-    private fun persistMatches(ctx: Context, store: Map<String, String>) {
-        runCatching {
-            File(cacheDir(ctx), "matches.txt")
-                .writeText(store.entries.joinToString("\n") { "${it.key}\t${it.value}" })
-        }
-    }
-
-    private fun resolveName(ctx: Context, title: String): String? {
-        val idx = loadIndex(ctx) ?: return null
-        val q = normalise(title)
-        if (q.length < 3) return null
-
-        idx[q]?.let { return it.minByOrNull(::rank) }
-        if (q.length >= 8) {
-            val prefixed = idx.keys.filter { it.startsWith(q) }
-            if (prefixed.isNotEmpty()) return prefixed.flatMap { idx.getValue(it) }.minByOrNull(::rank)
-        }
-        if (q.length >= 10) {
-            val contained = idx.keys.filter { it.length >= 10 && (it in q || q in it) }
-            if (contained.isNotEmpty()) return contained.flatMap { idx.getValue(it) }.minByOrNull(::rank)
-        }
-        return null
-    }
-
-    private fun rank(name: String): Int {
-        val low = name.lowercase()
-        var score = 0
-        if (BAD_TAGS.any { it in low }) score += 1000
-        val region = REGION_ORDER.indexOfFirst { "($it" in low }
-        score += (if (region < 0) REGION_ORDER.size else region) * 20
-        score += name.length
-        return score
-    }
-
-    private val BAD_TAGS = listOf("(demo", "(kiosk", "(beta", "(proto", "(sample", "(aftermarket", "(pirate")
-    private val REGION_ORDER = listOf("usa", "world", "europe", "australia", "japan")
-
-    private fun normalise(title: String): String =
-        title.lowercase()
-            .replace(Regex("""\([^)]*\)|\[[^\]]*\]"""), " ")
-            .replace(Regex("""[^a-z0-9]+"""), "")
-
-    private fun loadIndex(ctx: Context): Map<String, List<String>>? {
-        index?.let { return it }
-        if (indexFailed) return null
-
-        val file = File(cacheDir(ctx), "index.txt")
-        var names = runCatching { file.readLines().filter { it.isNotBlank() } }.getOrDefault(emptyList())
-        if (names.isEmpty()) {
-            names = runCatching {
-                ctx.assets.open(BUNDLED_INDEX).bufferedReader().useLines { lines ->
-                    lines.filter { it.isNotBlank() }.toList()
-                }
-            }.getOrDefault(emptyList())
-            if (names.isNotEmpty()) com.seedlessds.app.AppLog.i(TAG, "using the box art index bundled with the app")
-        }
-
-        if (names.isEmpty()) {
-            indexFailed = true
-            return null
-        }
-        val built = names.groupBy(::normalise)
-        index = built
-        com.seedlessds.app.AppLog.i(TAG, "box art index: ${names.size} covers, ${built.size} distinct titles")
-        return built
-    }
-
-    private fun fetchIndex(): List<String>? {
-        com.seedlessds.app.AppLog.i(TAG, "fetching the box art index")
-        return runCatching {
-            client.newCall(Request.Builder().url(BASE).build()).execute().use { response ->
-                if (!response.isSuccessful) {
-                    com.seedlessds.app.AppLog.i(TAG, "index request returned HTTP ${response.code}")
-                    return@use null
-                }
-                val html = response.body?.string() ?: return@use null
-                HREF.findAll(html)
-                    .map { URLDecoder.decode(it.groupValues[1], "UTF-8").removeSuffix(".png") }
-                    .filter { it.isNotBlank() }
-                    .toList()
-            }
-        }.getOrElse {
-            com.seedlessds.app.AppLog.i(TAG, "could not fetch the box art index: $it")
-            null
-        }
-    }
-
-    private val HREF = Regex("""<a href="([^"?/][^"]*\.png)"""")
+    private fun cacheDir(ctx: Context): File = File(ctx.filesDir, "boxart")
 
     private const val PREFS = "rom_library"
 
@@ -232,9 +155,8 @@ object BoxArt {
     fun clearCache(ctx: Context) {
         cacheDir(ctx).listFiles()?.forEach { it.delete() }
         runCatching { File(ctx.cacheDir, "image_cache").deleteRecursively() }
-        index = null
-        indexFailed = false
-        matches = null
+        legacyCache = null
+        matches.evictAll()
     }
 
     fun formatSize(uiContext: android.content.Context, bytes: Long): String = when {

@@ -71,8 +71,7 @@ data class CartridgeId(val gameCode: String, val revision: Int, val unitCode: In
         }
 
         private fun identify(header: ByteArray, catalog: MultiplayerCatalog?, section: (Int, Int) -> ByteArray?): CartridgeId {
-            val id = CartridgeId(String(header, 12, 4, Charsets.US_ASCII).trim { it <= ' ' },
-                header[0x1e].toInt() and 0xff, header[0x12].toInt() and 0xff)
+            val id = fromHeader(header)
             if (catalog?.hasVariants(id) != true) return id
             val hash = try {
                 contentHash(header, section)
@@ -81,6 +80,10 @@ data class CartridgeId(val gameCode: String, val revision: Int, val unitCode: In
             }
             return id.copy(contentHash = hash)
         }
+
+        internal fun fromHeader(header: ByteArray): CartridgeId =
+            CartridgeId(String(header, 12, 4, Charsets.US_ASCII).trim { it <= ' ' },
+                header[0x1e].toInt() and 0xff, header[0x12].toInt() and 0xff)
 
         private fun contentHash(prefix: ByteArray, section: (Int, Int) -> ByteArray?): String? {
             val tail = section(prefix.size, 0x160 - prefix.size) ?: return null
@@ -141,10 +144,13 @@ data class CartridgeId(val gameCode: String, val revision: Int, val unitCode: In
         }
 
         private fun zipId(context: Context, entry: RomLibrary.RomEntry, catalog: MultiplayerCatalog?): CartridgeId? =
+            withZipRom(context, entry) { open -> readStream(catalog, open) }
+
+        internal fun <T> withZipRom(context: Context, entry: RomLibrary.RomEntry, read: (() -> InputStream) -> T?): T? =
             context.contentResolver.openFileDescriptor(entry.uri, "r")?.use { descriptor ->
                 if (descriptor.statSize >= 0) {
                     try {
-                        return@use readZip(File("/proc/self/fd/" + descriptor.fd), catalog)
+                        return@use readZip(File("/proc/self/fd/" + descriptor.fd), read)
                     } catch (_: FileNotFoundException) {
                     }
                 }
@@ -153,15 +159,15 @@ data class CartridgeId(val gameCode: String, val revision: Int, val unitCode: In
                     context.contentResolver.openInputStream(entry.uri)?.use { input ->
                         copy.outputStream().use { input.copyTo(it) }
                     } ?: return@use null
-                    readZip(copy, catalog)
+                    readZip(copy, read)
                 } finally {
                     copy.delete()
                 }
             }
 
-        private fun readZip(file: File, catalog: MultiplayerCatalog?): CartridgeId? = ZipFile(file).use { archive ->
+        private fun <T> readZip(file: File, read: (() -> InputStream) -> T?): T? = ZipFile(file).use { archive ->
             val rom = archive.entries().asSequence().firstOrNull { !it.isDirectory && it.name.endsWith(".nds", true) }
-            rom?.let { readStream(catalog) { archive.getInputStream(it) } }
+            rom?.let { read { archive.getInputStream(it) } }
         }
     }
 }

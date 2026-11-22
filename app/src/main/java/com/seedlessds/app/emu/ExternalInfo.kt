@@ -178,7 +178,7 @@ fun ExternalLibraryGameInfo(
         val backdropUrl = coverUrl ?: raIconUrl
         if (backdropUrl != null) {
             AsyncImage(
-                model = backdropUrl,
+                model = BoxArt.imageRequest(uiContext, backdropUrl).build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 alpha = 0.45f,

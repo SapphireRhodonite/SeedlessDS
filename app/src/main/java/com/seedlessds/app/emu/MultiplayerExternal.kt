@@ -100,8 +100,8 @@ private fun ExternalShowcase(
     }
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().background(gameGradient(title.ifEmpty { "DS" })))
-        if (url != null) {
-            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, alpha = 0.45f,
+        url?.let { cover ->
+            AsyncImage(model = BoxArt.imageRequest(context, cover).build(), contentDescription = null, contentScale = ContentScale.Crop, alpha = 0.45f,
                 modifier = Modifier.fillMaxSize().blur(18.dp))
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.72f), Color.Black.copy(alpha = 0.35f)))))

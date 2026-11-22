@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -142,8 +141,7 @@ fun GameArt(
         }
         if (activeUrl != null) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(activeUrl)
+                model = BoxArt.imageRequest(context, activeUrl)
                     .crossfade(true)
                     .listener(
                         onSuccess = { _, _ -> artLoaded = true },
