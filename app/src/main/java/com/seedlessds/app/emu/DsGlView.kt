@@ -462,7 +462,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
             GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo)
             writeScreenGeometry(width, height)
 
-            val fxPath = PathCache.SYS_PREFIX + "shaders/${SettingsRepo.current.filter}.dfx"
+            val fxPath = PathCache.SYS_PREFIX + "shaders/${SettingsRepo.current.displayFilter}.dfx"
             val fxResult = SeedlessCore.fxLoad(fxPath, 0, 2208)
             if (fxResult != 0) com.seedlessds.app.AppLog.w("reconDS", "fxLoad failed ($fxResult): $fxPath, using the default shader")
 
@@ -632,7 +632,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
         }
 
         private fun displayKeyOf(cfg: DsSettings): String = listOf(
-            viewW, viewH, cfg.filter, cfg.hires3D, cfg.gl16bit, cfg.internalRes, cfg.integerScale, cfg.screenLayout,
+            viewW, viewH, cfg.displayFilter, cfg.hires3D, cfg.gl16bit, cfg.internalRes, cfg.integerScale, cfg.screenLayout,
             cfg.singleScreen, cfg.singleBottom, cfg.swapScreens, cfg.dualScreenPreset, cfg.dsKeepRatio, cfg.dsIntFillW,
             cfg.dsIntFillH, cfg.dsIntAlign, cfg.dsSameSize, cfg.extDisplayType, cfg.extDisplayScreen,
             ControlLayout.topScale, ControlLayout.topOffX, ControlLayout.topOffY,
@@ -655,7 +655,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
                 if (topTex2 != 0) { createScreenTexture(topTex2); createScreenTexture(bottomTex2); SeedlessCore.clearScreens(topTex2, bottomTex2) }
             }
             val (sw, sh) = srcDims()
-            val fxPath = PathCache.SYS_PREFIX + "shaders/${cfg.filter}.dfx"
+            val fxPath = PathCache.SYS_PREFIX + "shaders/${cfg.displayFilter}.dfx"
             val fxResult = SeedlessCore.fxLoad(fxPath, 0, 2208)
             if (fxResult != 0) com.seedlessds.app.AppLog.w("reconDS", "fxLoad failed ($fxResult): $fxPath, using the default shader")
             SeedlessCore.fxSetup(sw, sh, 0, 0, viewW, viewH)

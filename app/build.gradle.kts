@@ -19,8 +19,8 @@ android {
         applicationId = "com.seedlessds.app"
         minSdk = 21
         targetSdk = 35
-        versionCode = 112
-        versionName = "1.0.2"
+        versionCode = 113
+        versionName = "1.0.3"
 
         ndk {
             abiFilters += "arm64-v8a"
@@ -30,6 +30,7 @@ android {
             cmake {
                 arguments += "-DSEEDLESS_CORE_DIR=$coreDir"
                 System.getenv("SEEDLESS_THIRD_PARTY_DIR")?.let { arguments += "-DSEEDLESS_THIRD_PARTY_DIR=$it" }
+                project.findProperty("nativePgo")?.let { arguments += "-DSEEDLESS_USE_PGO=$it" }
                 cppFlags += "-std=c++17"
             }
         }

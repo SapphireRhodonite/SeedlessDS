@@ -63,3 +63,16 @@ target_compile_options(recon_fn PRIVATE
 target_link_libraries(recon_fn ${log-lib} dl m OpenSLES GLESv2)
 target_link_options(recon_fn PRIVATE -Wl,-Bsymbolic -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384)
 target_link_libraries(recon ${log-lib} dl recon_fn EGL GLESv2 android)
+
+option(SEEDLESS_USE_PGO "Use the bundled native core profile in Android release builds" ON)
+set(seedless_profile "${SEEDLESS_CORE_DIR}/pgo/android-arm64-clang14.profdata")
+if(SEEDLESS_USE_PGO AND CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a" AND
+        CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_EQUAL "14.0.7" AND
+        CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo)$" AND EXISTS "${seedless_profile}")
+    file(SHA256 "${seedless_profile}" profile_hash)
+    set(build_profile "${CMAKE_CURRENT_BINARY_DIR}/core-${profile_hash}.profdata")
+    configure_file("${seedless_profile}" "${build_profile}" COPYONLY)
+    target_compile_options(recon_fn PRIVATE
+            "$<$<COMPILE_LANGUAGE:C>:-fprofile-use=${build_profile};-mllvm;-static-func-full-module-prefix=false>")
+    target_link_options(recon_fn PRIVATE "-fprofile-use=${build_profile}")
+endif()

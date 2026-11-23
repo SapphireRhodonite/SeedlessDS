@@ -104,6 +104,12 @@ data class DsSettings(
     fun withFrameskip(type: Int): DsSettings = copy(frameskipType = type, dynamicRes = dynamicRes && type == 0)
     fun withDynamicRes(on: Boolean): DsSettings = copy(dynamicRes = on, frameskipType = if (on) 0 else frameskipType)
 
+    val pointColorCurve: Boolean
+        get() = gl16bit && filter == "None" && !blend
+
+    val displayFilter: String
+        get() = if (pointColorCurve) "compact/Point" else filter
+
     fun pack(): Long {
         var v = 0L
         v = v or (frameskipValue.toLong() and 15L)
@@ -123,6 +129,7 @@ data class DsSettings(
         if (backupInSavestates)  v = v or 0x2000000L
         if (ignoreGamecardLimit) v = v or 0x1000000L
         if (gl16bit)             v = v or 0x800000L
+        if (pointColorCurve)     v = v or (1L shl 51)
         if (autoTrim)            v = v or 0x1000000000L
         if (fixMainScreen)       v = v or 0x800000000L
         if (rtcSystemTime)       v = v or 0x8000000000L

@@ -267,20 +267,20 @@ internal class ExternalThread(
             GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, 192, null, GLES20.GL_DYNAMIC_DRAW)
             writeVbo(48, QUAD_FULL); writeVbo(96, UV_EXT)
         } else GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, extVbo)
-        if (chainReady && cfgApp.filter == chainFilter && sw == chainSw && sh == chainSh &&
+        if (chainReady && cfgApp.displayFilter == chainFilter && sw == chainSw && sh == chainSh &&
             width == chainW && height == chainH && r.contentEquals(chainRect) && target == chainTarget) return
         val quad = quadNdc(width, height, r)
         if (target) for (i in 1 until quad.size step 2) quad[i] = -quad[i]
         writeVbo(0, quad)
-        if (!chainReady || cfgApp.filter != chainFilter) {
-            val fxPath = PathCache.SYS_PREFIX + "shaders/${cfgApp.filter}.dfx"
+        if (!chainReady || cfgApp.displayFilter != chainFilter) {
+            val fxPath = PathCache.SYS_PREFIX + "shaders/${cfgApp.displayFilter}.dfx"
             val fxResult = SeedlessCore.extfxLoad(fxPath, 0, 96)
             if (fxResult != 0) com.seedlessds.app.AppLog.w("reconDS", "extfxLoad failed ($fxResult): $fxPath, using the default shader")
-            chainFilter = cfgApp.filter
+            chainFilter = cfgApp.displayFilter
         }
         SeedlessCore.extfxSetup(sw, sh, 0, 0, width, height)
         chainSw = sw; chainSh = sh; chainW = width; chainH = height; chainRect = r.copyOf(); chainTarget = target; chainReady = true
-        com.seedlessds.app.AppLog.i("reconDS", "EXTERNAL-THREAD chain ${cfgApp.filter} source ${sw}x${sh} surface ${width}x${height}")
+        com.seedlessds.app.AppLog.i("reconDS", "EXTERNAL-THREAD chain ${cfgApp.displayFilter} source ${sw}x${sh} surface ${width}x${height}")
     }
 
     private fun releaseOutputTarget() {
