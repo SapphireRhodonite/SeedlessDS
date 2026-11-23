@@ -164,7 +164,9 @@ object MultiplayerRoom {
                 val (socket, port) = withContext(Dispatchers.IO) {
                     val fd = Os.socket(OsConstants.AF_INET, OsConstants.SOCK_STREAM, 0)
                     try {
-                        ParcelFileDescriptor.dup(fd).use { bindInterface(it, route) }
+                        ParcelFileDescriptor.dup(fd).use {
+                            bindInterface(it, route, allowAddressBoundListener = true)
+                        }
                         Os.setsockoptInt(fd, OsConstants.SOL_SOCKET, OsConstants.SO_REUSEADDR, 1)
                         try {
                             Os.bind(fd, route.local, PORT)
@@ -214,8 +216,12 @@ object MultiplayerRoom {
             0
         }
 
-    private fun bindInterface(fd: ParcelFileDescriptor, route: MultiplayerGroup) {
-        check(SeedlessCore.multiplayerBindInterface(fd.fd, route.index) == 0) { "Could not bind Wi-Fi Direct interface" }
+    private fun bindInterface(fd: ParcelFileDescriptor, route: MultiplayerGroup,
+        allowAddressBoundListener: Boolean = false) {
+        val result = SeedlessCore.multiplayerBindInterface(fd.fd, route.index)
+        check(result == 0 || (allowAddressBoundListener && result == INTERFACE_PERMISSION_DENIED)) {
+            "Could not bind Wi-Fi Direct interface"
+        }
     }
 
     suspend fun leave(): Int = operations.withLock {
@@ -500,6 +506,7 @@ object MultiplayerRoom {
         }
     }
 
+    private const val INTERFACE_PERMISSION_DENIED = -2
     private const val TAG = "MultiplayerRoom"
     const val HOST_KEY = "host"
     private const val MAX_LINE = 8192
