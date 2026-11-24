@@ -215,6 +215,14 @@ fun MultiplayerLobby(
     BackHandler(enabled = dialog == LobbyDialog.NONE) { dialog = LobbyDialog.CLOSE }
 
     val joiningApp = viewModel.joining.collectAsState().value?.app.orEmpty()
+    val notice = when {
+        interrupted -> stringResource(R.string.multiplayer_interrupted_message)
+        closed -> stringResource(R.string.mp_host_closed)
+        duplicate -> stringResource(R.string.mp_duplicate, profile.nickname)
+        failure is MultiplayerViewModel.Failure.Message -> stringResource((failure as MultiplayerViewModel.Failure.Message).text)
+        else -> null
+    }
+    val scrollNotice = compact && notice != null
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalMultiplayerInteractive provides (dialog == LobbyDialog.NONE)) {
         Column(Modifier.fillMaxSize()) {
@@ -225,29 +233,47 @@ fun MultiplayerLobby(
             }) {
                 Mono(stringResource(R.string.mp_players_of, connected, info?.maximum ?: 16), color = colors.text2, size = 11.sp, spacing = 1.sp)
             }
-            Column(Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                val notice = when {
-                    interrupted -> stringResource(R.string.multiplayer_interrupted_message)
-                    closed -> stringResource(R.string.mp_host_closed)
-                    duplicate -> stringResource(R.string.mp_duplicate, profile.nickname)
-                    failure is MultiplayerViewModel.Failure.Message -> stringResource((failure as MultiplayerViewModel.Failure.Message).text)
-                    else -> null
-                }
+            Column(
+                Modifier.weight(1f).then(if (scrollNotice) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 if (notice != null) {
-                    Row(
-                        Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(10.dp)).background(colors.gold.copy(alpha = 0.12f))
-                            .border(2.dp, colors.gold.copy(alpha = 0.55f), RoundedCornerShape(10.dp)).padding(start = 14.dp, end = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Mono(stringResource(if (duplicate && !interrupted && !closed) R.string.mp_notice_name else R.string.mp_notice), color = colors.goldText,
-                            spacing = 1.sp)
-                        Text(notice, color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 17.sp,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    val frame = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                        .background(colors.gold.copy(alpha = 0.12f))
+                        .border(2.dp, colors.gold.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
+                    val heading = stringResource(
+                        if (duplicate && !interrupted && !closed) R.string.mp_notice_name else R.string.mp_notice,
+                    )
+                    val message: @Composable (Modifier) -> Unit = { modifier ->
+                        Text(
+                            notice, color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp, lineHeight = 17.sp, maxLines = if (compact) Int.MAX_VALUE else 2,
+                            overflow = TextOverflow.Ellipsis, modifier = modifier,
+                        )
+                    }
+                    val action: @Composable () -> Unit = {
                         when {
                             interrupted || closed -> NoticeButton(stringResource(R.string.mp_leave)) { viewModel.leave { if (it) onClosed() } }
                             duplicate -> NoticeButton(stringResource(R.string.mp_change_name), onProfile)
                             else -> Unit
+                        }
+                    }
+                    if (compact) {
+                        Column(frame.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Mono(heading, color = colors.goldText, spacing = 1.sp)
+                            message(Modifier.fillMaxWidth())
+                            action()
+                        }
+                    } else {
+                        Row(
+                            frame.height(48.dp).padding(start = 14.dp, end = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Mono(heading, color = colors.goldText, spacing = 1.sp)
+                            message(Modifier.weight(1f))
+                            action()
                         }
                     }
                 }
@@ -293,7 +319,8 @@ fun MultiplayerLobby(
                         )
                     }
                 }
-                SeatsPanel(seats, info?.maximum ?: 16, if (wide) 5 else if (compact) 3 else 4, Modifier.fillMaxWidth().weight(1f))
+                val seatsHeight = if (scrollNotice) Modifier.heightIn(min = 172.dp) else Modifier.weight(1f)
+                SeatsPanel(seats, info?.maximum ?: 16, if (wide) 5 else if (compact) 3 else 4, Modifier.fillMaxWidth().then(seatsHeight))
                 if (compact) {
                     if (host) CodeCard(info?.code.orEmpty(), Modifier.fillMaxWidth().height(64.dp))
                     gameCard(Modifier.fillMaxWidth().heightIn(min = 74.dp))

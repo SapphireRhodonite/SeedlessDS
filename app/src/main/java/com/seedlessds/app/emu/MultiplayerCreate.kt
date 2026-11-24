@@ -29,6 +29,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
@@ -42,6 +43,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -180,6 +184,8 @@ fun MultiplayerCreate(
 
     val uriHandler = LocalUriHandler.current
     var searchFocused by remember(step) { mutableStateOf(false) }
+    val keyboardVisible = step == 1 && WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val focusManager = LocalFocusManager.current
     BackHandler { back() }
     val padAction by rememberUpdatedState<(Int) -> Unit> { key ->
         when (key) {
@@ -196,7 +202,10 @@ fun MultiplayerCreate(
     val advance: @Composable () -> Unit = {
         PillButton(
             text = stringResource(if (!last) R.string.mp_next else if (editing) R.string.mp_save_game else R.string.mp_open_room),
-            onClick = { next() },
+            onClick = {
+                if (keyboardVisible) focusManager.clearFocus()
+                next()
+            },
             enabled = !busy && (step != 1 || rom != null),
             key = "START",
         )
@@ -210,7 +219,7 @@ fun MultiplayerCreate(
             Hint("L R", stringResource(R.string.mp_hint_letter))
         }
     }
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().then(if (step == 1) Modifier.imePadding() else Modifier)) {
         MultiplayerHeader(
             title = stringResource(if (step == 0) R.string.mp_create_title else if (play == MultiplayerRoom.Play.DOWNLOAD) R.string.mp_play_download else R.string.mp_play_rom),
             onBack = { back() },
@@ -229,6 +238,7 @@ fun MultiplayerCreate(
                     if (it == play) next() else play = it
                 }
                 else -> GameStep(roms, shown, rom, filter, wide, query.isNotBlank(), searchFocused, catalog, play, showAll,
+                    showFilters = !keyboardVisible,
                     onShowAll = { showAll = !showAll; filter = 0; query = "" },
                     onFilter = { filter = it; query = "" },
                     onFocusGame = { viewModel.focus.value = MultiplayerFocus.Game(it, play) },
@@ -244,13 +254,15 @@ fun MultiplayerCreate(
             }
         }
         MultiplayerFooter(compactContent = {
-            hints()
-            if (step == 1) sourceLink()
+            if (!keyboardVisible) {
+                hints()
+                if (step == 1) sourceLink()
+            }
             advance()
         }) {
-            hints()
+            if (!keyboardVisible) hints()
             Grow()
-            if (step == 1) sourceLink()
+            if (step == 1 && !keyboardVisible) sourceLink()
             advance()
         }
     }
@@ -299,6 +311,7 @@ private fun SearchField(query: String, onQuery: (String) -> Unit, total: Int, fo
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ModeStep(play: MultiplayerRoom.Play, bios: Boolean, onBios: () -> Unit, onFocusMode: (MultiplayerRoom.Play, Boolean) -> Unit,
     onPick: (MultiplayerRoom.Play) -> Unit) {
@@ -337,11 +350,23 @@ private fun ModeStep(play: MultiplayerRoom.Play, bios: Boolean, onBios: () -> Un
     val locked = play == MultiplayerRoom.Play.CHAT && chatLocked
     val details: @Composable (Modifier) -> Unit = { modifier ->
         Column(modifier.panel(colors).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Mono(stringResource(R.string.mp_each_needs))
-            Row((if (compact) Modifier.heightIn(min = 72.dp) else Modifier.weight(1f)).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally)) {
-                (0 until 3).forEach { index -> ConsoleNeed(play, index) }
+            Mono(stringResource(R.string.mp_each_needs), lines = if (compact) Int.MAX_VALUE else 1)
+            if (compact) {
+                FlowRow(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    repeat(3) { ConsoleNeed(play, it) }
+                }
+            } else {
+                Row(
+                    Modifier.weight(1f).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+                ) {
+                    repeat(3) { ConsoleNeed(play, it) }
+                }
             }
             Text(
                 stringResource(when (play) {
@@ -427,6 +452,7 @@ private fun GameStep(
     catalog: MultiplayerCatalog?,
     play: MultiplayerRoom.Play,
     showAll: Boolean,
+    showFilters: Boolean,
     onShowAll: () -> Unit,
     onFilter: (Int) -> Unit,
     onFocusGame: (LibraryGame) -> Unit,
@@ -474,7 +500,9 @@ private fun GameStep(
             )
         }
         val filterRow = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)
-        if (compact) {
+        if (!showFilters) {
+            Box(filterRow) { resultCount() }
+        } else if (compact) {
             FlowRow(filterRow, horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 filters()
                 resultCount()

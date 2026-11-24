@@ -94,6 +94,7 @@
         <activity
             android:name=".emu.MultiplayerActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
 
