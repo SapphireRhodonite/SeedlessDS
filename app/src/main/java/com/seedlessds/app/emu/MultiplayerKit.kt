@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -230,8 +234,8 @@ fun Mono(
 }
 
 @Composable
-fun TileTitle(text: String, modifier: Modifier = Modifier, color: Color = seedless.text, size: TextUnit = 16.sp) {
-    Text(text, modifier, color = color, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = size, maxLines = 1,
+fun TileTitle(text: String, modifier: Modifier = Modifier, color: Color = seedless.text, size: TextUnit = 16.sp, lines: Int = 1) {
+    Text(text, modifier, color = color, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = size, maxLines = lines,
         overflow = TextOverflow.Ellipsis)
 }
 
@@ -319,9 +323,25 @@ fun Hint(key: String, text: String) {
 }
 
 @Composable
-fun MultiplayerFooter(centered: Boolean = false, content: @Composable RowScope.() -> Unit) {
+internal fun compactMultiplayerLayout(): Boolean = LocalConfiguration.current.screenWidthDp < 600
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun MultiplayerFooter(
+    centered: Boolean = false,
+    compactContent: (@Composable () -> Unit)? = null,
+    content: @Composable RowScope.() -> Unit,
+) {
     val colors = seedless
     Box(Modifier.fillMaxWidth().height(1.dp).background(colors.line))
+    if (compactContent != null && compactMultiplayerLayout()) {
+        FlowRow(
+            Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, if (centered) Alignment.CenterHorizontally else Alignment.End),
+            verticalArrangement = Arrangement.Center,
+        ) { compactContent() }
+        return
+    }
     Row(
         Modifier.fillMaxWidth().height(56.dp).padding(start = 18.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -341,6 +361,7 @@ fun MultiplayerHeader(
     MultiplayerHeader(AnnotatedString(title), onBack, modifier, tags = tags, trailing = trailing)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MultiplayerHeader(
     title: AnnotatedString,
@@ -351,9 +372,11 @@ fun MultiplayerHeader(
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     Column(modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().height(56.dp).padding(start = if (onBack != null) 8.dp else 18.dp, end = 16.dp),
+            Modifier.fillMaxWidth().then(if (compact) Modifier.heightIn(min = 56.dp) else Modifier.height(56.dp))
+                .padding(start = if (onBack != null) 8.dp else 18.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -366,10 +389,19 @@ fun MultiplayerHeader(
             leading()
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 21.sp, letterSpacing = (-0.3).sp,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                tags()
+                    maxLines = if (compact) 3 else 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                if (!compact) tags()
             }
-            trailing()
+            if (!compact) trailing()
+        }
+        if (compact) {
+            FlowRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, content = tags)
+                Row(verticalAlignment = Alignment.CenterVertically, content = trailing)
+            }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.line))
     }

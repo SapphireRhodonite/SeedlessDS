@@ -3,6 +3,9 @@ package com.seedlessds.app.emu
 import android.view.KeyEvent
 import android.os.Build
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -246,41 +249,68 @@ fun MultiplayerScreen(viewModel: MultiplayerViewModel, pad: SharedFlow<Int>, act
 @Composable
 fun MultiplayerPermission(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val focus = remember { FocusRequester() }
     BackHandler { onSkip() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(compact) { runCatching { focus.requestFocus() } }
+    val radar: @Composable (Modifier) -> Unit = { modifier ->
+        Box(modifier.panel(colors, 12.dp), contentAlignment = Alignment.Center) {
+            Waves(Modifier.size(if (compact) 116.dp else 220.dp))
+            Mono(stringResource(R.string.mp_perm_radar), Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp), size = 10.sp)
+        }
+    }
+    val explanation: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val ask = stringResource(if (Build.VERSION.SDK_INT >= 33) R.string.mp_perm_nearby else R.string.mp_perm_location)
+            Text(
+                buildAnnotatedString {
+                    val text = stringResource(R.string.mp_perm_body, ask)
+                    val start = text.indexOf(ask)
+                    append(text)
+                    if (start >= 0) addStyle(SpanStyle(color = colors.goodText), start, start + ask.length)
+                },
+                color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 21.sp,
+                modifier = Modifier.padding(bottom = 2.dp),
+            )
+            PermissionPoint(true, stringResource(R.string.mp_perm_find), stringResource(R.string.mp_perm_find_sub))
+            PermissionPoint(true, stringResource(R.string.mp_perm_direct), stringResource(R.string.mp_perm_direct_sub))
+            PermissionPoint(false, stringResource(R.string.mp_perm_private), stringResource(R.string.mp_perm_private_sub))
+        }
+    }
+    val buttons: @Composable (Modifier) -> Unit = { modifier ->
+        Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MenuTile(onContinue, Modifier.weight(1.5f).heightIn(min = 50.dp).focusRequester(focus)) {
+                TileTitle(stringResource(R.string.mp_continue), size = 15.sp)
+            }
+            MenuTile(onSkip, Modifier.weight(1f).heightIn(min = 50.dp)) {
+                TileTitle(stringResource(R.string.mp_not_now), size = 15.sp)
+            }
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         MultiplayerHeader(stringResource(R.string.mp_perm_title), onBack = onBack) {
             Mono(stringResource(R.string.mp_first_time))
         }
-        Row(Modifier.weight(1f).fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(Modifier.width(236.dp).fillMaxHeight().panel(colors, 12.dp), contentAlignment = Alignment.Center) {
-                Waves(Modifier.size(220.dp))
-                Mono(stringResource(R.string.mp_perm_radar), Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp), size = 10.sp)
+        if (compact) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                explanation(Modifier.fillMaxWidth())
+                radar(Modifier.fillMaxWidth().height(132.dp))
             }
-            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val ask = stringResource(if (Build.VERSION.SDK_INT >= 33) R.string.mp_perm_nearby else R.string.mp_perm_location)
-                Text(
-                    buildAnnotatedString {
-                        val text = stringResource(R.string.mp_perm_body, ask)
-                        val start = text.indexOf(ask)
-                        append(text)
-                        if (start >= 0) addStyle(SpanStyle(color = colors.goodText), start, start + ask.length)
-                    },
-                    color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 21.sp,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
-                PermissionPoint(true, stringResource(R.string.mp_perm_find), stringResource(R.string.mp_perm_find_sub))
-                PermissionPoint(true, stringResource(R.string.mp_perm_direct), stringResource(R.string.mp_perm_direct_sub))
-                PermissionPoint(false, stringResource(R.string.mp_perm_private), stringResource(R.string.mp_perm_private_sub))
-                Box(Modifier.weight(1f))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MenuTile(onContinue, Modifier.weight(1.5f).height(50.dp).focusRequester(focus)) { TileTitle(stringResource(R.string.mp_continue), size = 15.sp) }
-                    MenuTile(onSkip, Modifier.weight(1f).height(50.dp)) { TileTitle(stringResource(R.string.mp_not_now), size = 15.sp) }
+            buttons(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
+        } else {
+            Row(Modifier.weight(1f).fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                radar(Modifier.width(236.dp).fillMaxHeight())
+                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    explanation(Modifier.weight(1f).verticalScroll(rememberScrollState()))
+                    buttons(Modifier.fillMaxWidth())
                 }
             }
         }
-        MultiplayerFooter {
+        MultiplayerFooter(compactContent = {
+            Mono(stringResource(R.string.mp_direct_permission).uppercase(), size = 10.sp, spacing = 0.5.sp, lines = 2)
+        }) {
             Hint("A", stringResource(R.string.mp_hint_choose))
             Hint("B", stringResource(R.string.multiplayer_back))
             Grow()
@@ -298,8 +328,8 @@ private fun PermissionPoint(yes: Boolean, title: String, detail: String) {
     ) {
         Mono(if (yes) "✓" else "✕", Modifier.width(18.dp).padding(top = 2.dp), color = if (yes) colors.goodText else colors.text2, size = 11.sp)
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            TileTitle(title, size = 14.sp)
-            Mono(detail.uppercase(), size = 10.sp, spacing = 0.5.sp)
+            Text(title, color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Mono(detail.uppercase(), size = 10.sp, spacing = 0.5.sp, lines = Int.MAX_VALUE)
         }
     }
 }
@@ -339,6 +369,7 @@ fun multiplayerTitle(): AnnotatedString {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MultiplayerHub(
     viewModel: MultiplayerViewModel,
@@ -350,6 +381,7 @@ fun MultiplayerHub(
     onBack: () -> Unit,
 ) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val profile by viewModel.profile.collectAsState()
     val nearby by viewModel.nearby.collectAsState()
     val failure by viewModel.failure.collectAsState()
@@ -390,12 +422,25 @@ fun MultiplayerHub(
             }
         }
         Column(Modifier.weight(1f).padding(start = 16.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.padding(end = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val nearbyHeading: @Composable () -> Unit = {
                 Text(stringResource(R.string.mp_nearby), color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 19.sp)
                 Pulse()
                 Mono(stringResource(R.string.mp_searching).uppercase())
-                Grow()
+            }
+            val roomCount: @Composable () -> Unit = {
                 Mono(pluralStringResource(R.plurals.mp_rooms, nearby.size, nearby.size), color = colors.text2, size = 11.sp, spacing = 0.sp)
+            }
+            if (compact) {
+                FlowRow(Modifier.padding(end = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    nearbyHeading()
+                    roomCount()
+                }
+            } else {
+                Row(Modifier.padding(end = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    nearbyHeading()
+                    Grow()
+                    roomCount()
+                }
             }
             failure?.let { value ->
                 if (value is MultiplayerViewModel.Failure.Message) Text(stringResource(value.text), color = colors.goldText, fontSize = 14.sp,
@@ -411,7 +456,13 @@ fun MultiplayerHub(
                 }
             }
         }
-        MultiplayerFooter(centered = true) {
+        MultiplayerFooter(centered = true, compactContent = {
+            Hint("A", stringResource(R.string.mp_join))
+            Hint("X", stringResource(R.string.mp_hint_create))
+            Hint("Y", stringResource(R.string.mp_code_title))
+            Hint("SELECT", stringResource(R.string.mp_hint_profile))
+            Hint("B", stringResource(R.string.mp_hint_library))
+        }) {
             Hint("A", stringResource(R.string.mp_join))
             Hint("X", stringResource(R.string.mp_hint_create))
             Hint("Y", stringResource(R.string.mp_code_title))

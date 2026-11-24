@@ -40,12 +40,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -105,6 +110,7 @@ fun MultiplayerCreate(
     onBack: () -> Unit,
 ) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val roms by viewModel.roms.collectAsState()
     val bios by viewModel.bios.collectAsState()
     val busy by viewModel.busy.collectAsState()
@@ -184,6 +190,26 @@ fun MultiplayerCreate(
     }
     LaunchedEffect(pad) { pad.collect { padAction(it) } }
 
+    val sourceLink: @Composable () -> Unit = {
+        FilterChip("GameTDB", false) { uriHandler.openUri("https://www.gametdb.com/DS") }
+    }
+    val advance: @Composable () -> Unit = {
+        PillButton(
+            text = stringResource(if (!last) R.string.mp_next else if (editing) R.string.mp_save_game else R.string.mp_open_room),
+            onClick = { next() },
+            enabled = !busy && (step != 1 || rom != null),
+            key = "START",
+        )
+    }
+    val hints: @Composable () -> Unit = {
+        if (step == 0) {
+            Hint("A", stringResource(R.string.mp_hint_choose_next))
+            Hint("B", stringResource(R.string.multiplayer_back))
+        } else {
+            Hint("A", stringResource(R.string.mp_hint_choose))
+            Hint("L R", stringResource(R.string.mp_hint_letter))
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         MultiplayerHeader(
             title = stringResource(if (step == 0) R.string.mp_create_title else if (play == MultiplayerRoom.Play.DOWNLOAD) R.string.mp_play_download else R.string.mp_play_rom),
@@ -194,7 +220,7 @@ fun MultiplayerCreate(
                     size = 11.sp)
             } else {
                 SearchField(query, { query = it }, eligible.size, searchFocused,
-                    Modifier.width(214.dp).onFocusChanged { searchFocused = it.isFocused })
+                    (if (compact) Modifier.fillMaxWidth() else Modifier.width(214.dp)).onFocusChanged { searchFocused = it.isFocused })
             }
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -217,24 +243,15 @@ fun MultiplayerCreate(
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
             }
         }
-        MultiplayerFooter {
-            if (step == 0) {
-                Hint("A", stringResource(R.string.mp_hint_choose_next))
-                Hint("B", stringResource(R.string.multiplayer_back))
-            } else {
-                Hint("A", stringResource(R.string.mp_hint_choose))
-                Hint("L R", stringResource(R.string.mp_hint_letter))
-            }
+        MultiplayerFooter(compactContent = {
+            hints()
+            if (step == 1) sourceLink()
+            advance()
+        }) {
+            hints()
             Grow()
-            if (step == 1) {
-                FilterChip("GameTDB", false) { uriHandler.openUri("https://www.gametdb.com/DS") }
-            }
-            PillButton(
-                text = stringResource(if (!last) R.string.mp_next else if (editing) R.string.mp_save_game else R.string.mp_open_room),
-                onClick = { next() },
-                enabled = !busy && (step != 1 || rom != null),
-                key = "START",
-            )
+            if (step == 1) sourceLink()
+            advance()
         }
     }
 }
@@ -287,10 +304,11 @@ private fun ModeStep(play: MultiplayerRoom.Play, bios: Boolean, onBios: () -> Un
     onPick: (MultiplayerRoom.Play) -> Unit) {
     val colors = seedless
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val compact = compactMultiplayerLayout()
+    LaunchedEffect(compact) { runCatching { focus.requestFocus() } }
     val chatLocked = !bios
-    Row(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Column(Modifier.width(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val options: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Mono(stringResource(R.string.mp_how_play).trimEnd('?', '¿').trimStart('¿').uppercase(), Modifier.padding(start = 2.dp, bottom = 2.dp))
             listOf(
                 Triple(MultiplayerRoom.Play.ROM, Icons.Filled.SportsEsports, R.string.mp_play_rom),
@@ -300,14 +318,14 @@ private fun ModeStep(play: MultiplayerRoom.Play, bios: Boolean, onBios: () -> Un
                 val locked = mode == MultiplayerRoom.Play.CHAT && chatLocked
                 MenuTile(
                     onClick = { if (locked) onBios() else onPick(mode) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp).let { if (mode == play) it.focusRequester(focus) else it }
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).let { if (mode == play) it.focusRequester(focus) else it }
                         .onFocusChanged { if (it.isFocused) onFocusMode(mode, locked) },
                     selected = mode == play && !locked,
                     dim = locked,
                 ) {
                     Icon(icon, null, tint = colors.text, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(10.dp))
-                    TileTitle(stringResource(title), Modifier.weight(1f))
+                    TileTitle(stringResource(title), Modifier.weight(1f), lines = if (compact) 2 else 1)
                     Mono(
                         if (locked) "BIOS" else stringResource(R.string.mp_max, if (mode == MultiplayerRoom.Play.CHAT) 16 else 8),
                         color = if (locked) colors.goldText else colors.text3, spacing = 0.5.sp,
@@ -315,10 +333,13 @@ private fun ModeStep(play: MultiplayerRoom.Play, bios: Boolean, onBios: () -> Un
                 }
             }
         }
-        val locked = play == MultiplayerRoom.Play.CHAT && chatLocked
-        Column(Modifier.weight(1f).fillMaxHeight().panel(colors).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    }
+    val locked = play == MultiplayerRoom.Play.CHAT && chatLocked
+    val details: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier.panel(colors).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Mono(stringResource(R.string.mp_each_needs))
-            Row(Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            Row((if (compact) Modifier.heightIn(min = 72.dp) else Modifier.weight(1f)).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally)) {
                 (0 until 3).forEach { index -> ConsoleNeed(play, index) }
             }
@@ -337,8 +358,21 @@ private fun ModeStep(play: MultiplayerRoom.Play, bios: Boolean, onBios: () -> Un
                     play == MultiplayerRoom.Play.DOWNLOAD -> R.string.mp_meta_download
                     else -> R.string.mp_meta_chat
                 }).uppercase(),
-                color = if (locked) colors.goldText else colors.text2, size = 11.sp, spacing = 0.5.sp, lines = 2,
+                color = if (locked) colors.goldText else colors.text2, size = 11.sp, spacing = 0.5.sp,
+                lines = if (compact) Int.MAX_VALUE else 2,
             )
+        }
+    }
+    val body = Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp)
+    if (compact) {
+        Column(body.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            options(Modifier.fillMaxWidth())
+            details(Modifier.fillMaxWidth())
+        }
+    } else {
+        Row(body, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            options(Modifier.width(300.dp).verticalScroll(rememberScrollState()))
+            details(Modifier.weight(1f).fillMaxHeight())
         }
     }
 }
@@ -380,6 +414,7 @@ internal fun ConsoleNeed(play: MultiplayerRoom.Play, index: Int) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GameStep(
     library: List<LibraryGame>,
@@ -398,6 +433,7 @@ private fun GameStep(
     onPick: (LibraryGame) -> Unit,
 ) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val context = LocalContext.current
     val focus = remember { FocusRequester() }
     val grid = rememberLazyGridState()
@@ -419,14 +455,14 @@ private fun GameStep(
         }
     }
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        val filters: @Composable () -> Unit = {
             listOf(0 to R.string.mp_filter_library, 1 to R.string.mp_filter_recent,
                 2 to R.string.mp_filter_favorites).forEach { (value, label) ->
                 FilterChip(stringResource(label).uppercase(), filter == value && !searching) { onFilter(value) }
             }
             FilterChip(stringResource(R.string.mp_show_all).uppercase(), showAll, onShowAll)
-            Grow()
+        }
+        val resultCount: @Composable () -> Unit = {
             Mono(
                 when {
                     searching -> pluralStringResource(R.plurals.mp_count_found, shown.size, shown.size)
@@ -436,6 +472,19 @@ private fun GameStep(
                 }.uppercase(),
                 size = 11.sp, spacing = 0.sp,
             )
+        }
+        val filterRow = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)
+        if (compact) {
+            FlowRow(filterRow, horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                filters()
+                resultCount()
+            }
+        } else {
+            Row(filterRow, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                filters()
+                Grow()
+                resultCount()
+            }
         }
         if (shown.isEmpty()) {
             val emptyText = when {
@@ -450,7 +499,7 @@ private fun GameStep(
         Row(Modifier.weight(1f).padding(start = 16.dp, top = 8.dp)) {
             LazyVerticalGrid(
                 state = grid,
-                columns = GridCells.Fixed(if (wide) 5 else 4),
+                columns = GridCells.Fixed(if (wide) 5 else if (compact) 3 else 4),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 8.dp),

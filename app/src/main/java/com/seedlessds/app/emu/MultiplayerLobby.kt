@@ -103,6 +103,7 @@ fun MultiplayerLobby(
     onClosed: () -> Unit,
 ) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -250,10 +251,8 @@ fun MultiplayerLobby(
                         }
                     }
                 }
-                SeatsPanel(seats, info?.maximum ?: 16, if (wide) 5 else 4, Modifier.fillMaxWidth().weight(1f))
-                Row(Modifier.height(74.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                val gameCard: @Composable (Modifier) -> Unit = { modifier ->
                     if (host) {
-                        CodeCard(info?.code.orEmpty(), Modifier.width(250.dp).fillMaxHeight())
                         GameCard(
                             info = info,
                             rom = localRom,
@@ -266,7 +265,7 @@ fun MultiplayerLobby(
                             }.orEmpty(),
                             good = false,
                             onClick = onEdit,
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            modifier = modifier,
                         )
                     } else {
                         val (subtitle, good) = when {
@@ -288,19 +287,25 @@ fun MultiplayerLobby(
                             subtitle = subtitle,
                             good = good,
                             onClick = { if (openable) openGuest(info) else if (!bios) actions.openBiosSettings() },
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            modifier = modifier,
                             action = if (openable) stringResource(R.string.mp_open_now) else null,
                             focus = primary,
                         )
                     }
                 }
+                SeatsPanel(seats, info?.maximum ?: 16, if (wide) 5 else if (compact) 3 else 4, Modifier.fillMaxWidth().weight(1f))
+                if (compact) {
+                    if (host) CodeCard(info?.code.orEmpty(), Modifier.fillMaxWidth().height(64.dp))
+                    gameCard(Modifier.fillMaxWidth().heightIn(min = 74.dp))
+                } else {
+                    Row(Modifier.height(74.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (host) CodeCard(info?.code.orEmpty(), Modifier.width(250.dp).fillMaxHeight())
+                        gameCard(Modifier.weight(1f).fillMaxHeight())
+                    }
+                }
             }
             if (host) {
-                MultiplayerFooter {
-                    Hint("X", stringResource(R.string.mp_hint_game))
-                    Hint("Y", stringResource(R.string.mp_hint_details))
-                    Hint("B", stringResource(R.string.mp_hint_close))
-                    Grow()
+                val startAction: @Composable () -> Unit = {
                     PillButton(
                         text = if (canStart) stringResource(R.string.mp_start, connected) else stringResource(R.string.mp_waiting),
                         onClick = { start() },
@@ -309,8 +314,23 @@ fun MultiplayerLobby(
                         modifier = Modifier.focusRequester(primary),
                     )
                 }
+                val hints: @Composable () -> Unit = {
+                    Hint("X", stringResource(R.string.mp_hint_game))
+                    Hint("Y", stringResource(R.string.mp_hint_details))
+                    Hint("B", stringResource(R.string.mp_hint_close))
+                }
+                MultiplayerFooter(compactContent = {
+                    hints()
+                    startAction()
+                }) {
+                    hints()
+                    Grow()
+                    startAction()
+                }
             } else {
-                MultiplayerFooter {
+                MultiplayerFooter(compactContent = {
+                    Mono(stringResource(R.string.mp_pause_warning).uppercase(), size = 11.sp, spacing = 0.5.sp, lines = 2)
+                }) {
                     Hint("A", stringResource(R.string.mp_hint_open))
                     Hint("B", stringResource(R.string.mp_hint_leave))
                     Grow()
@@ -499,6 +519,7 @@ private fun GameCard(
     focus: FocusRequester? = null,
 ) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val chat = info?.play == MultiplayerRoom.Play.CHAT
     val title = when {
         chat -> stringResource(R.string.mp_play_chat)
@@ -520,9 +541,10 @@ private fun GameCard(
     ) {
         RoomArt(if (chat) null else rom, title, Modifier.size(64.dp, 57.dp).clip(RoundedCornerShape(6.dp)))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, color = colors.text, fontFamily = SpaceGrotesk, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+            Text(title, color = colors.text, fontFamily = SpaceGrotesk, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = if (compact) 2 else 1,
                 overflow = TextOverflow.Ellipsis)
-            Mono((if (good) "✓ " else "") + subtitle.uppercase(), color = if (good) colors.goodText else colors.text2, spacing = 0.5.sp)
+            Mono((if (good) "✓ " else "") + subtitle.uppercase(), color = if (good) colors.goodText else colors.text2,
+                spacing = 0.5.sp, lines = if (compact) 2 else 1)
         }
         if (action != null) {
             Row(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(colors.red).padding(horizontal = 16.dp),
@@ -572,6 +594,7 @@ fun CredentialRow(label: String, value: String, code: Boolean = false, small: Bo
 @Composable
 fun MultiplayerConnecting(viewModel: MultiplayerViewModel, onCancel: () -> Unit) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val room by viewModel.joining.collectAsState()
     val step by viewModel.joinStep.collectAsState()
     val profile by viewModel.profile.collectAsState()
@@ -593,10 +616,11 @@ fun MultiplayerConnecting(viewModel: MultiplayerViewModel, onCancel: () -> Unit)
         }) {
             Mono(stringResource(R.string.mp_step_of, (position + 1).coerceAtMost(steps.size), steps.size), size = 11.sp, spacing = 1.sp)
         }
-        Row(Modifier.weight(1f).fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(Modifier.width(236.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        val participants: @Composable (Modifier) -> Unit = { modifier ->
+            Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 RoomArt(matchRom(library.asSequence(), target.game), roomTitle(target),
-                    Modifier.fillMaxWidth().aspectRatio(DsBoxArtAspectRatio).clip(RoundedCornerShape(12.dp))
+                    (if (compact) Modifier.width(104.dp) else Modifier.fillMaxWidth()).aspectRatio(DsBoxArtAspectRatio)
+                        .align(Alignment.CenterHorizontally).clip(RoundedCornerShape(12.dp))
                         .border(1.dp, colors.text.copy(alpha = 0.13f), RoundedCornerShape(12.dp)))
                 Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween) {
@@ -616,13 +640,30 @@ fun MultiplayerConnecting(viewModel: MultiplayerViewModel, onCancel: () -> Unit)
                     }
                 }
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        }
+        val progress: @Composable (Modifier) -> Unit = { modifier ->
+            Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 steps.forEachIndexed { index, (title, meta, _) ->
                     ProgressStep(title, meta.uppercase(), done = index < position, active = index == position)
                 }
             }
         }
-        MultiplayerFooter {
+        val body = Modifier.weight(1f).fillMaxWidth().padding(16.dp)
+        if (compact) {
+            Column(body.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                participants(Modifier.fillMaxWidth())
+                progress(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(body, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                participants(Modifier.width(236.dp))
+                progress(Modifier.weight(1f))
+            }
+        }
+        val cancel: @Composable () -> Unit = {
+            PillButton(stringResource(R.string.mp_cancel), { viewModel.cancelJoin(onCancel) }, key = "B")
+        }
+        MultiplayerFooter(compactContent = { cancel() }) {
             Hint("B", stringResource(R.string.mp_cancel))
         }
     }
@@ -631,6 +672,7 @@ fun MultiplayerConnecting(viewModel: MultiplayerViewModel, onCancel: () -> Unit)
 @Composable
 private fun ProgressStep(title: String, meta: String, done: Boolean, active: Boolean) {
     val colors = seedless
+    val compact = compactMultiplayerLayout()
     val shape = RoundedCornerShape(10.dp)
     Row(
         Modifier.fillMaxWidth().heightIn(min = 64.dp).alpha(if (done || active) 1f else 0.55f).clip(shape).background(tileColor(colors, false, active))
@@ -650,7 +692,8 @@ private fun ProgressStep(title: String, meta: String, done: Boolean, active: Boo
         }
         Spacer(Modifier.width(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(title, color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1,
+            Text(title, color = colors.text, fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                maxLines = if (compact) 2 else 1,
                 overflow = TextOverflow.Ellipsis)
             if (meta.isNotEmpty()) Mono(meta, spacing = 0.5.sp, lines = 2)
         }
@@ -705,7 +748,11 @@ fun MultiplayerDirectFail(
                 }
             }
         }
-        MultiplayerFooter {
+        MultiplayerFooter(compactContent = {
+            Hint("A", stringResource(R.string.mp_hint_choose))
+            Hint("Y", stringResource(R.string.mp_wifi_short))
+            Hint("B", stringResource(R.string.multiplayer_back))
+        }) {
             Hint("A", stringResource(R.string.mp_hint_choose))
             Hint("Y", stringResource(R.string.mp_wifi_short))
             Grow()
