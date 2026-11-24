@@ -14,6 +14,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -84,6 +86,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -95,6 +98,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LibraryScreen(
     refreshKey: Int,
@@ -297,6 +301,23 @@ fun LibraryScreen(
         modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
         containerColor = colors.bg,
         topBar = {
+            val compactHeader = LocalConfiguration.current.screenWidthDp < 600
+            val headerActions: @Composable () -> Unit = {
+                MultiplayerHeaderButton { onOpenMultiplayer(null) }
+                if (!compactHeader) Spacer(Modifier.width(4.dp))
+                SeedlessHeaderAction(Icons.Rounded.Search, uiContext.getString(R.string.library_search), { searchOpen = true })
+                ProfileChip(profile) { profileDialog = true }
+                if (!compactHeader) Spacer(Modifier.width(4.dp))
+                ViewModeToggle(viewMode) {
+                    viewMode = it
+                    RomLibrary.setViewMode(ctx, it)
+                }
+                if (!compactHeader) Spacer(Modifier.width(4.dp))
+                SeedlessHeaderAction(Icons.Rounded.VideogameAsset, uiContext.getString(R.string.library_open_rom), onOpenSingle)
+                SeedlessHeaderAction(Icons.Rounded.CreateNewFolder, uiContext.getString(R.string.library_add_folder), onAddFolder)
+                SeedlessHeaderAction(Icons.Rounded.FolderDelete, uiContext.getString(R.string.library_remove_folder), { foldersDialog = true })
+                SeedlessHeaderAction(Icons.Rounded.Settings, uiContext.getString(R.string.common_settings), onGlobalSettings)
+            }
             Column(Modifier.background(colors.bg).statusBarsPadding()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -401,22 +422,14 @@ fun LibraryScreen(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    if (!searchOpen) {
-                        MultiplayerHeaderButton { onOpenMultiplayer(null) }
-                        Spacer(Modifier.width(4.dp))
-                        SeedlessHeaderAction(Icons.Rounded.Search, uiContext.getString(R.string.library_search), { searchOpen = true })
-                        ProfileChip(profile) { profileDialog = true }
-                    Spacer(Modifier.width(4.dp))
-                    ViewModeToggle(viewMode) {
-                        viewMode = it
-                        RomLibrary.setViewMode(ctx, it)
-                    }
-                    Spacer(Modifier.width(4.dp))
-                    SeedlessHeaderAction(Icons.Rounded.VideogameAsset, uiContext.getString(R.string.library_open_rom), onOpenSingle)
-                    SeedlessHeaderAction(Icons.Rounded.CreateNewFolder, uiContext.getString(R.string.library_add_folder), onAddFolder)
-                    SeedlessHeaderAction(Icons.Rounded.FolderDelete, uiContext.getString(R.string.library_remove_folder), { foldersDialog = true })
-                    SeedlessHeaderAction(Icons.Rounded.Settings, uiContext.getString(R.string.common_settings), onGlobalSettings)
-                    }
+                    if (!searchOpen && !compactHeader) headerActions()
+                }
+                if (!searchOpen && compactHeader) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) { headerActions() }
                 }
                 TextButton(
                     onClick = onBootFirmware,
