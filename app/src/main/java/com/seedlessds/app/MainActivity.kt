@@ -22,6 +22,7 @@ import com.seedlessds.app.emu.ExternalInfoBus
 import com.seedlessds.app.emu.ExternalInfoController
 import com.seedlessds.app.emu.SeedlessTheme
 import com.seedlessds.app.emu.EmulatorActivity
+import com.seedlessds.app.emu.GameActivity
 import com.seedlessds.app.emu.LibraryScreen
 import com.seedlessds.app.emu.MultiplayerActivity
 import com.seedlessds.app.emu.RomLibrary
@@ -77,7 +78,7 @@ class MainActivity : ComponentActivity() {
                             onAddFolder = { folderPicker.launch(null) },
                             onOpenSingle = { singlePicker.launch(arrayOf("*/*")) },
                             onBootFirmware = {
-                                startActivity(Intent(this, EmulatorActivity::class.java)
+                                startActivity(Intent(this, GameActivity::class.java)
                                     .putExtra(EmulatorActivity.EXTRA_FIRMWARE_BOOT, true))
                             },
                             onOpenMultiplayer = { join ->
@@ -138,7 +139,7 @@ class MainActivity : ComponentActivity() {
         if (takePerm) runCatching {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        startActivity(Intent(this, EmulatorActivity::class.java).apply {
+        startActivity(Intent(this, GameActivity::class.java).apply {
             putExtra(EmulatorActivity.EXTRA_ROM_URI, uri.toString())
             putExtra(EmulatorActivity.EXTRA_LOAD_SLOT, loadSlot)
         })

@@ -18,7 +18,11 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.seedlessds.app.MainActivity
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.documentfile.provider.DocumentFile
 import com.seedlessds.app.control.RuntimeControl
@@ -43,12 +47,18 @@ open class EmulatorActivity : ComponentActivity() {
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_LOAD_SLOT = "load_slot"
         const val EXTRA_FIRMWARE_BOOT = "firmware_boot"
+        private const val EXTRA_FRONTEND_PARENT = "frontend_parent"
+        private const val EXTRA_FRONTEND_NAME = "frontend_name"
         private const val TAG = "SeedlessEmu"
         private var pendingClose: kotlinx.coroutines.CompletableDeferred<Unit>? = null
         const val UP = 0; const val DOWN = 1; const val LEFT = 2; const val RIGHT = 3
         const val A = 4; const val B = 5; const val X = 6; const val Y = 7
         const val L = 8; const val R = 9; const val START = 10; const val SELECT = 11
     }
+
+    private var frontendJob: Job? = null
+    private var frontendDialog: android.app.AlertDialog? = null
+    private val isFrontendEntry: Boolean get() = javaClass == EmulatorActivity::class.java
 
     private var inited = false
     private lateinit var glView: DsGlView
@@ -98,6 +108,26 @@ open class EmulatorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (isFrontendEntry) {
+            openFrontend(intent)
+            return
+        }
+        if (this is GameActivity && intent.hasExtra(EXTRA_FRONTEND_PARENT)) {
+            lifecycleScope.launch {
+                pendingClose?.await()
+                val profile = if (RuntimeControl.active) "" else Profiles.userSub(this@EmulatorActivity)
+                val parent = intent.getStringExtra(EXTRA_FRONTEND_PARENT) ?: return@launch finish()
+                val uri = intent.getStringExtra(EXTRA_ROM_URI)?.let(Uri::parse) ?: return@launch finish()
+                val saves = withContext(Dispatchers.IO) {
+                    runCatching { SaveLocation.frontendSaves(applicationContext, uri, parent, profile) }.getOrNull()
+                }
+                if (!isFinishing && !isDestroyed) {
+                    if (saves == null) showFrontendError(AppR.string.frontend_save_unavailable)
+                    else createEmulation(saves, profile)
+                }
+            }
+            return
+        }
         val player = when (this) {
             is PhantomPrimaryActivity -> PhantomPlayer(this, true)
             is PhantomPeerActivity -> PhantomPlayer(this, false)
@@ -122,7 +152,53 @@ open class EmulatorActivity : ComponentActivity() {
         }
     }
 
-    private fun createEmulation() {
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (isFrontendEntry) {
+            setIntent(intent)
+            openFrontend(intent)
+        }
+    }
+
+    private fun openFrontend(request: Intent) {
+        frontendJob?.cancel()
+        frontendDialog?.setOnDismissListener(null)
+        frontendDialog?.dismiss()
+        frontendJob = lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching { FrontendLaunch.resolve(applicationContext, request) }
+                    .getOrDefault(FrontendLaunch.Result.Unverified)
+            }
+            if (isFinishing || isDestroyed) return@launch
+            when (result) {
+                is FrontendLaunch.Result.Game -> {
+                    startActivity(Intent(this@EmulatorActivity, GameActivity::class.java)
+                        .putExtra(EXTRA_ROM_URI, result.uri.toString())
+                        .putExtra(EXTRA_FRONTEND_PARENT, result.parentId)
+                        .putExtra(EXTRA_FRONTEND_NAME, result.name)
+                        .putExtra(EXTRA_LOAD_SLOT, request.getIntExtra(EXTRA_LOAD_SLOT, -1)))
+                    finish()
+                }
+                FrontendLaunch.Result.Unverified -> showFrontendError(AppR.string.frontend_origin_unverified)
+                FrontendLaunch.Result.NameNotFound -> showFrontendError(AppR.string.frontend_name_not_found)
+                FrontendLaunch.Result.AmbiguousName -> showFrontendError(AppR.string.frontend_name_ambiguous)
+            }
+        }
+    }
+
+    private fun showFrontendError(message: Int) {
+        frontendDialog = android.app.AlertDialog.Builder(this)
+            .setTitle(AppR.string.frontend_launch_unavailable)
+            .setMessage(message)
+            .setPositiveButton(AppR.string.frontend_open_library) { _, _ ->
+                startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            }
+            .setNegativeButton(AppR.string.common_cancel, null)
+            .setOnDismissListener { finish() }
+            .show()
+    }
+
+    private fun createEmulation(frontendSaves: SaveLocation.FrontendSaves? = null, frontendProfile: String? = null) {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enterImmersive()
         if (phantom == null) EmuAssets.ensureInstalled(this)
@@ -137,17 +213,23 @@ open class EmulatorActivity : ComponentActivity() {
             firmwareBoot -> {
                 romKey = "firmware"
                 val name = getString(AppR.string.firmware_title)
-                PathCache.changeRom(romKey, null, null, name)
+                PathCache.changeRom(romKey, null, null, name, null)
                 name
             }
-            romPath != null -> { romKey = romPath; val n = romPath.substringAfterLast('/'); PathCache.changeRom(romKey, null, romPath, n); n }
-            romUri != null -> { val n = queryName(romUri) ?: "game.nds"; romKey = n; PathCache.changeRom(romKey, romUri, null, n); libraryUri = romUri; n }
+            romPath != null -> { romKey = romPath; val n = romPath.substringAfterLast('/'); PathCache.changeRom(romKey, null, romPath, n, null); n }
+            romUri != null -> {
+                val name = intent.getStringExtra(EXTRA_FRONTEND_NAME) ?: queryName(romUri) ?: "game.nds"
+                romKey = name
+                PathCache.changeRom(romKey, romUri, null, name, frontendSaves)
+                libraryUri = romUri
+                name
+            }
             else -> { finish(); return }
         }
 
         val gameBase = if (firmwareBoot) getString(AppR.string.multiplayer_download_play)
             else displayName.substringBeforeLast('.')
-        val userSub = if (RuntimeControl.active || phantom != null) "" else Profiles.userSub(this)
+        val userSub = frontendProfile ?: if (RuntimeControl.active || phantom != null) "" else Profiles.userSub(this)
         PathCache.activeUserSub = userSub
         SettingsRepo.load(this)
         SettingsRepo.activateFor(this, gameBase)
@@ -174,7 +256,7 @@ open class EmulatorActivity : ComponentActivity() {
 
         KeyMap.load(this)
         ControlLayout.load(this)
-        val stateInfo = SaveStateInfo(this, userSub, gameBase, romUri, romPath)
+        val stateInfo = SaveStateInfo(this, userSub, gameBase, romUri, romPath, frontendSaves)
         reconSlot.set(0)
         if (com.seedlessds.app.Recon.available) {
             com.seedlessds.app.Recon.rom("open", displayName)
@@ -316,7 +398,7 @@ open class EmulatorActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) enterImmersive()
+        if (hasFocus && !isFrontendEntry) enterImmersive()
     }
 
     private fun applyOrientation() {
@@ -461,6 +543,7 @@ open class EmulatorActivity : ComponentActivity() {
     private var keyR = false
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (isFrontendEntry) return super.dispatchKeyEvent(event)
         if (isClosing || !::glView.isInitialized) return true
         KeyCapture.onKey?.let { capture ->
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) capture(event.keyCode)
@@ -549,6 +632,7 @@ open class EmulatorActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        if (isFrontendEntry) return
         com.seedlessds.app.AppLog.i(TAG, "onPause")
         if (microphone.pending && MultiplayerSession.active) return
         pauseEmulation()
@@ -575,12 +659,12 @@ open class EmulatorActivity : ComponentActivity() {
         refreshPauseState()
         if (::glView.isInitialized) glView.onPause()
         refreshExternalMode()
-        if (phantom == null && !isFinishing && !isClosing) showResumeNotification()
+        if (inited && phantom == null && !isFinishing && !isClosing) showResumeNotification()
     }
 
     override fun onResume() {
         super.onResume()
-        if (isClosing) return
+        if (isFrontendEntry || isClosing) return
         sessionStart = System.currentTimeMillis()
         if (::glView.isInitialized) glView.onResume()
         cancelResumeNotification()
@@ -601,7 +685,7 @@ open class EmulatorActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= 26)
             nm.createNotificationChannel(NotificationChannel(ch, getString(AppR.string.emu_emulation), NotificationManager.IMPORTANCE_LOW))
         val pi = android.app.PendingIntent.getActivity(this, 0,
-            Intent(this, EmulatorActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+            Intent(this, GameActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
             android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT)
         val n = androidx.core.app.NotificationCompat.Builder(this, ch)
             .setSmallIcon(android.R.drawable.ic_media_play)
@@ -687,6 +771,8 @@ open class EmulatorActivity : ComponentActivity() {
 
     override fun onDestroy() {
         com.seedlessds.app.AppLog.i(TAG, "onDestroy")
+        frontendDialog?.setOnDismissListener(null)
+        frontendDialog?.dismiss()
         super.onDestroy()
         if (!closed && inited) closeEmulation() else releasePlayer()
     }
@@ -698,3 +784,5 @@ open class EmulatorActivity : ComponentActivity() {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { player.close() }
     }
 }
+
+class GameActivity : EmulatorActivity()

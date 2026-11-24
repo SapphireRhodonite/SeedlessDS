@@ -270,6 +270,12 @@
     <string name="library_no_folders_added_yet">"No folders added yet."</string>
     <string name="library_no_games_with_achievements_yet_a_game_joins_this_list_once_you_launch_it_an">"No games with achievements yet.\nA game joins this list once you launch it and RetroAchievements identifies it."</string>
     <string name="library_no_roms_in_the_added_folders">"No ROMs in the added folders."</string>
+    <string name="frontend_launch_unavailable">"Can't open game"</string>
+    <string name="frontend_origin_unverified">"Select an accessible ROM folder in the library and launch a game in that folder."</string>
+    <string name="frontend_name_not_found">"No game has that exact filename in the accessible ROM folders."</string>
+    <string name="frontend_name_ambiguous">"More than one game has that filename. Use its full path or select the game in the library."</string>
+    <string name="frontend_save_unavailable">"SeedlessDS can't write to the selected save location. Check Save Files in Settings."</string>
+    <string name="frontend_open_library">"Open library"</string>
     <string name="library_open_rom">"Open ROM"</string>
     <string name="library_options">"Options"</string>
     <string name="library_platform_profile">"%1$s · profile %2$s"</string>
@@ -754,7 +760,7 @@
     <string name="settings_volume_latency_microphone">"Volume, latency, microphone"</string>
     <string name="settings_what_to_do_with_a_connected_external_monitor_tv">"What to do with a connected external monitor/TV."</string>
     <string name="settings_when_opening_a_game_automatically_loads_the">"When opening a game, automatically loads the last saved state."</string>
-    <string name="settings_where_game_saves_and_savestates_are_kept_next_to_the_rom_makes_them_visible">"Where game saves and savestates are kept. Next to the ROM makes them visible to file managers and other emulators; the ones already in the app are copied over the first time they are needed."</string>
+    <string name="settings_where_game_saves_and_savestates_are_kept_next_to_the_rom_makes_them_visible">"Where game saves and savestates are kept. Next to the ROM makes them visible to file managers and other emulators; existing app saves are copied over on first use when opening a game from the library."</string>
     <string name="settings_where_the_leftover_space_goes_on_the_device">"Where the leftover space goes on the device."</string>
     <string name="settings_where_the_leftover_space_goes_on_the_external">"Where the leftover space goes on the external display."</string>
     <string name="settings_where_to_place_the_button_that_opens_the_game">"Where to place the ☰ button that opens the game menu."</string>

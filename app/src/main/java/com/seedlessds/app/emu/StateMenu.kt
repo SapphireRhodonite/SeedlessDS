@@ -81,25 +81,26 @@ class SaveStateInfo(
     private val base: String,
     private val romUri: android.net.Uri?,
     private val romPath: String?,
+    private val frontendSaves: SaveLocation.FrontendSaves? = null,
 ) {
     private fun internalDir() = File(EmuAssets.systemDir(ctx), "user" + (if (userSub.isEmpty()) "" else "/$userSub") + "/savestates")
     private fun stateName(slot: Int) = "${base}_$slot.dss"
     private fun sidecarName(slot: Int) = "${base}_$slot.ra"
     private fun rel(name: String) = "savestates/$name"
-    private fun stat(slot: Int) = SaveLocation.stat(ctx, romUri, romPath, rel(stateName(slot)), userSub, File(internalDir(), stateName(slot)))
+    private fun stat(slot: Int) = SaveLocation.stat(ctx, romUri, romPath, rel(stateName(slot)), userSub, File(internalDir(), stateName(slot)), frontendSaves)
     fun exists(slot: Int) = stat(slot) != null
     fun date(slot: Int): Long = stat(slot)?.lastModified ?: 0L
     fun sizeKb(slot: Int): Long = (stat(slot)?.size ?: 0L) / 1024
     fun delete(slot: Int) {
-        SaveLocation.delete(ctx, romUri, romPath, rel(stateName(slot)), userSub, File(internalDir(), stateName(slot)))
+        SaveLocation.delete(ctx, romUri, romPath, rel(stateName(slot)), userSub, File(internalDir(), stateName(slot)), frontendSaves)
         deleteSidecar(slot)
     }
     fun readSidecar(slot: Int): ByteArray? =
-        SaveLocation.readBytes(ctx, romUri, romPath, rel(sidecarName(slot)), userSub, File(internalDir(), sidecarName(slot)))
+        SaveLocation.readBytes(ctx, romUri, romPath, rel(sidecarName(slot)), userSub, File(internalDir(), sidecarName(slot)), frontendSaves)
     fun writeSidecar(slot: Int, bytes: ByteArray): Boolean =
-        SaveLocation.writeBytes(ctx, romUri, romPath, rel(sidecarName(slot)), userSub, File(internalDir(), sidecarName(slot)), bytes)
+        SaveLocation.writeBytes(ctx, romUri, romPath, rel(sidecarName(slot)), userSub, File(internalDir(), sidecarName(slot)), bytes, frontendSaves)
     fun deleteSidecar(slot: Int) =
-        SaveLocation.delete(ctx, romUri, romPath, rel(sidecarName(slot)), userSub, File(internalDir(), sidecarName(slot)))
+        SaveLocation.delete(ctx, romUri, romPath, rel(sidecarName(slot)), userSub, File(internalDir(), sidecarName(slot)), frontendSaves)
     fun thumbnailTop(slot: Int): Bitmap? {
         if (!exists(slot)) return null
         return try {

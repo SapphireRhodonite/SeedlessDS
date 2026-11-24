@@ -68,6 +68,8 @@ am start -n com.seedlessds.app/com.seedlessds.app.LaunchGame \
     --ei load_slot 1
 ```
 
+Add the ROM folder to the SeedlessDS library before launching from a frontend. A filename by itself must match exactly one game in the accessible library folders. The launch uses the save location selected in SeedlessDS settings.
+
 The app recognizes `.nds`, `.dsi`, `.srl` and `.ids` game files and includes archive handling for ZIP, 7z and RAR. File recognition does not guarantee that a game or every archive layout is compatible. Device testing of the 7z/RAR paths remains in progress.
 
 ## How it is built

@@ -55,12 +55,12 @@ class MultiplayerActivity : ComponentActivity() {
             exit = { finish() },
             launchRom = { game ->
                 RomLibrary.markPlayed(this, game.entry)
-                startActivity(Intent(this, EmulatorActivity::class.java)
+                startActivity(Intent(this, GameActivity::class.java)
                     .putExtra(EmulatorActivity.EXTRA_ROM_URI, game.uri.toString())
                     .putExtra(EmulatorActivity.EXTRA_LOAD_SLOT, -1))
             },
             launchFirmware = {
-                startActivity(Intent(this, EmulatorActivity::class.java).putExtra(EmulatorActivity.EXTRA_FIRMWARE_BOOT, true))
+                startActivity(Intent(this, GameActivity::class.java).putExtra(EmulatorActivity.EXTRA_FIRMWARE_BOOT, true))
             },
             openBiosSettings = { biosPicker.launch(arrayOf("*/*")) },
             openWifiSettings = { runCatching { startActivity(Intent(Settings.ACTION_WIFI_SETTINGS)) } },

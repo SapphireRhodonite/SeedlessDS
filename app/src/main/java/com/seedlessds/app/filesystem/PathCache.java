@@ -7,6 +7,7 @@ import android.os.ParcelFileDescriptor;
 import androidx.annotation.Keep;
 
 import com.seedlessds.app.emu.EmuAssets;
+import com.seedlessds.app.emu.SaveLocation;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,7 @@ public class PathCache {
     private static Uri romUri;
     private static String romRealPath;
     private static String romName;
+    private static SaveLocation.FrontendSaves frontendSaves;
 
     public static void setAppContext(Context c) {
         ctx = c.getApplicationContext();
@@ -55,11 +57,12 @@ public class PathCache {
         throw new RuntimeException("Bad path prefix: " + path);
     }
 
-    public static synchronized void changeRom(String key, Uri uri, String realPath, String name) {
+    public static synchronized void changeRom(String key, Uri uri, String realPath, String name, SaveLocation.FrontendSaves saves) {
         romKey = key;
         romUri = uri;
         romRealPath = realPath;
         romName = name;
+        frontendSaves = saves;
     }
 
     public static synchronized NativePathHandle open(String path, String mode) {
@@ -85,8 +88,8 @@ public class PathCache {
         }
 
         if (dataRoot == null && path.startsWith(USER_PREFIX)) {
-            NativePathHandle h = com.seedlessds.app.emu.SaveLocation.openHandle(
-                ctx, romUri, romRealPath, sanitize(path).substring(USER_PREFIX.length()), mode, activeUserSub, resolve(path));
+            NativePathHandle h = SaveLocation.openHandle(
+                ctx, romUri, romRealPath, sanitize(path).substring(USER_PREFIX.length()), mode, activeUserSub, resolve(path), frontendSaves);
             if (h != null) return h;
         }
         File f = resolve(path);
@@ -104,9 +107,15 @@ public class PathCache {
 
     public static synchronized boolean remove(String path) {
         if (dataRoot == null && path.startsWith(USER_PREFIX)) {
-            Boolean r = com.seedlessds.app.emu.SaveLocation.remove(
-                ctx, romUri, romRealPath, sanitize(path).substring(USER_PREFIX.length()), activeUserSub);
-            if (r != null) { File i = resolve(path); if (i.exists()) i.delete(); return r; }
+            Boolean r = SaveLocation.remove(
+                ctx, romUri, romRealPath, sanitize(path).substring(USER_PREFIX.length()), activeUserSub, frontendSaves);
+            if (r != null) {
+                if (frontendSaves == null) {
+                    File internal = resolve(path);
+                    if (internal.exists()) internal.delete();
+                }
+                return r;
+            }
         }
         File f = resolve(path);
         return f.exists() && f.delete();
@@ -114,9 +123,9 @@ public class PathCache {
 
     public static synchronized boolean rename(String from, String to) {
         if (dataRoot == null && from.startsWith(USER_PREFIX) && to.startsWith(USER_PREFIX)) {
-            Boolean r = com.seedlessds.app.emu.SaveLocation.rename(
+            Boolean r = SaveLocation.rename(
                 ctx, romUri, romRealPath, sanitize(from).substring(USER_PREFIX.length()),
-                sanitize(to).substring(USER_PREFIX.length()), activeUserSub);
+                sanitize(to).substring(USER_PREFIX.length()), activeUserSub, frontendSaves);
             if (r != null) return r;
         }
         File a = resolve(from);

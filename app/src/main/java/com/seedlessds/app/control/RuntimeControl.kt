@@ -10,6 +10,7 @@ import com.seedlessds.app.BuildConfig
 import com.seedlessds.app.emu.DsSettings
 import com.seedlessds.app.emu.EmuAssets
 import com.seedlessds.app.emu.EmulatorActivity
+import com.seedlessds.app.emu.GameActivity
 import com.seedlessds.app.emu.SettingsRepo
 import com.seedlessds.app.filesystem.PathCache
 import com.seedlessds.core.SeedlessCore
@@ -269,7 +270,7 @@ object RuntimeControl {
                 "CONFIGURE" -> configure(ctx, args)
                 "LAUNCH_FIRMWARE" -> {
                     check(!running) { "An emulation session is already running" }
-                    onMain { ctx.startActivity(Intent(ctx, EmulatorActivity::class.java)
+                    onMain { ctx.startActivity(Intent(ctx, GameActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         .putExtra(EmulatorActivity.EXTRA_FIRMWARE_BOOT, true)) }
                 }
@@ -277,7 +278,7 @@ object RuntimeControl {
                     check(!running) { "An emulation session is already running" }
                     val rom = externalFile(ctx, args.getString("rom"))
                     require(rom.isFile) { "ROM does not exist" }
-                    onMain { ctx.startActivity(Intent(ctx, EmulatorActivity::class.java)
+                    onMain { ctx.startActivity(Intent(ctx, GameActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         .putExtra(EmulatorActivity.EXTRA_ROM_PATH, rom.absolutePath)) }
                 }

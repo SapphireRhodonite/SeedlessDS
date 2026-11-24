@@ -18,6 +18,8 @@ object SaveLocation {
 
     private const val MIME_BIN = "application/octet-stream"
 
+    class FrontendSaves internal constructor(internal val target: Target?)
+
     class Entry(val uri: Uri, val lastModified: Long, val size: Long, val isDir: Boolean)
 
     sealed class Target {
@@ -195,9 +197,26 @@ object SaveLocation {
     }
 
 
-    fun place(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String): Pair<Target, String>? {
+    internal fun frontendSaves(ctx: Context, romUri: Uri, parentId: String, profile: String): FrontendSaves? {
+        val location = setting()
+        val tree = when (location) {
+            APP_STORAGE -> return FrontendSaves(null)
+            CUSTOM -> customTree() ?: return null
+            else -> DocumentsContract.buildTreeDocumentUri(romUri.authority ?: return null, DocumentsContract.getTreeDocumentId(romUri))
+        }
+        if (ctx.contentResolver.persistedUriPermissions.none { it.uri == tree && it.isWritePermission }) return null
+        val id = if (location == CUSTOM) DocumentsContract.getTreeDocumentId(tree) else parentId
+        val dir = DocumentsContract.buildDocumentUriUsingTree(tree, id)
+        val folder = androidx.documentfile.provider.DocumentFile.fromSingleUri(ctx, dir)
+        if (folder?.isDirectory != true || !folder.canWrite()) return null
+        val selected = document(ctx, tree, id)
+        return if (profile.isEmpty()) FrontendSaves(selected) else selected.subfolder(profile)?.let(::FrontendSaves)
+    }
+
+    private fun place(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, frontend: FrontendSaves?): Pair<Target, String>? {
         val parts = userRel.split('/').filter { it.isNotEmpty() }
         if (parts.size != 2 || (parts[0] != "backup" && parts[0] != "savestates")) return null
+        if (frontend != null) return frontend.target?.let { it to parts[1] }
         var t = target(ctx, romUri, romPath) ?: return null
         if (profile.isNotEmpty()) t = t.subfolder(profile) ?: return null
         return t to parts[1]
@@ -217,46 +236,46 @@ object SaveLocation {
 
 
     @JvmStatic
-    fun openHandle(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, mode: String, profile: String, internal: File?): NativePathHandle? {
-        val (t, name) = place(ctx, romUri, romPath, userRel, profile) ?: return null
-        migrate(t, name, internal)
+    fun openHandle(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, mode: String, profile: String, internal: File?, frontend: FrontendSaves?): NativePathHandle? {
+        val (t, name) = place(ctx, romUri, romPath, userRel, profile, frontend) ?: return null
+        if (frontend == null) migrate(t, name, internal)
         val fd = t.openFd(name, mode, isWrite(mode))
         if (fd < 0) return NativePathHandle(File(ctx.cacheDir, "missing/$name").absolutePath, name)
         return NativePathHandle("/proc/self/fd/$fd", fd, name)
     }
 
     @JvmStatic
-    fun remove(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String): Boolean? {
-        val (t, name) = place(ctx, romUri, romPath, userRel, profile) ?: return null
+    fun remove(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, frontend: FrontendSaves?): Boolean? {
+        val (t, name) = place(ctx, romUri, romPath, userRel, profile, frontend) ?: return null
         return t.delete(name)
     }
 
     @JvmStatic
-    fun rename(ctx: Context, romUri: Uri?, romPath: String?, fromRel: String, toRel: String, profile: String): Boolean? {
-        val (t, from) = place(ctx, romUri, romPath, fromRel, profile) ?: return null
-        val (_, to) = place(ctx, romUri, romPath, toRel, profile) ?: return null
+    fun rename(ctx: Context, romUri: Uri?, romPath: String?, fromRel: String, toRel: String, profile: String, frontend: FrontendSaves?): Boolean? {
+        val (t, from) = place(ctx, romUri, romPath, fromRel, profile, frontend) ?: return null
+        val (_, to) = place(ctx, romUri, romPath, toRel, profile, frontend) ?: return null
         return t.rename(from, to)
     }
 
-    fun stat(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File): Entry? {
-        val placed = place(ctx, romUri, romPath, userRel, profile)
+    fun stat(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File, frontend: FrontendSaves? = null): Entry? {
+        val placed = place(ctx, romUri, romPath, userRel, profile, frontend)
         if (placed == null) return if (internal.exists()) Entry(Uri.fromFile(internal), internal.lastModified(), internal.length(), false) else null
         val (t, name) = placed
         t.lookup(name)?.let { return it }
-        return if (internal.exists()) Entry(Uri.fromFile(internal), internal.lastModified(), internal.length(), false) else null
+        return if (frontend == null && internal.exists()) Entry(Uri.fromFile(internal), internal.lastModified(), internal.length(), false) else null
     }
 
-    fun readBytes(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File): ByteArray? {
-        val placed = place(ctx, romUri, romPath, userRel, profile)
+    fun readBytes(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File, frontend: FrontendSaves? = null): ByteArray? {
+        val placed = place(ctx, romUri, romPath, userRel, profile, frontend)
         if (placed == null) return if (internal.exists()) runCatching { internal.readBytes() }.getOrNull() else null
         val (t, name) = placed
         val fd = t.openFd(name, "r", false)
-        if (fd < 0) return if (internal.exists()) runCatching { internal.readBytes() }.getOrNull() else null
+        if (fd < 0) return if (frontend == null && internal.exists()) runCatching { internal.readBytes() }.getOrNull() else null
         return runCatching { android.os.ParcelFileDescriptor.adoptFd(fd).use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.readBytes() } } }.getOrNull()
     }
 
-    fun writeBytes(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File, bytes: ByteArray): Boolean {
-        val placed = place(ctx, romUri, romPath, userRel, profile)
+    fun writeBytes(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File, bytes: ByteArray, frontend: FrontendSaves? = null): Boolean {
+        val placed = place(ctx, romUri, romPath, userRel, profile, frontend)
         if (placed == null) return runCatching { internal.parentFile?.mkdirs(); internal.writeBytes(bytes) }.isSuccess
         val (t, name) = placed
         val fd = t.openFd(name, "w", true)
@@ -264,10 +283,10 @@ object SaveLocation {
         return runCatching { android.os.ParcelFileDescriptor.adoptFd(fd).use { pfd -> FileOutputStream(pfd.fileDescriptor).use { it.write(bytes) } } }.isSuccess
     }
 
-    fun delete(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File) {
-        val placed = place(ctx, romUri, romPath, userRel, profile)
+    fun delete(ctx: Context, romUri: Uri?, romPath: String?, userRel: String, profile: String, internal: File, frontend: FrontendSaves? = null) {
+        val placed = place(ctx, romUri, romPath, userRel, profile, frontend)
         if (placed != null) placed.first.delete(placed.second)
-        runCatching { internal.delete() }
+        if (frontend?.target == null) runCatching { internal.delete() }
     }
 
     fun folderLabel(ctx: Context): String = when (setting()) {

@@ -87,7 +87,7 @@ class PhantomActivity : ComponentActivity() {
     }
 
     private fun checkIdle() {
-        val emulators = setOf(EmulatorActivity::class.java.name, PhantomPrimaryActivity::class.java.name, PhantomPeerActivity::class.java.name)
+        val emulators = setOf(GameActivity::class.java.name, PhantomPrimaryActivity::class.java.name, PhantomPeerActivity::class.java.name)
         val busy = if (Build.VERSION.SDK_INT >= 23) {
             activityManager.appTasks.any { it.taskInfo.topActivity?.className in emulators }
         } else {

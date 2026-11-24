@@ -80,7 +80,9 @@ object RomLibrary {
     private fun isCartridgeImage(name: String): Boolean =
         name.endsWith(".nds", true) || name.endsWith(".srl", true)
 
-    fun scan(ctx: Context): List<RomEntry> {
+    fun scan(ctx: Context): List<RomEntry> = scan(ctx, folders(ctx))
+
+    internal fun scan(ctx: Context, roots: List<Uri>): List<RomEntry> {
         val t0 = android.os.SystemClock.elapsedRealtime()
         val out = ArrayList<RomEntry>()
         val cols = arrayOf(
@@ -90,7 +92,7 @@ object RomLibrary {
             DocumentsContract.Document.COLUMN_SIZE,
             DocumentsContract.Document.COLUMN_LAST_MODIFIED,
         )
-        for (t in folders(ctx)) {
+        for (t in roots) {
             val children = runCatching {
                 DocumentsContract.buildChildDocumentsUriUsingTree(t, DocumentsContract.getTreeDocumentId(t))
             }.getOrNull() ?: continue
@@ -109,7 +111,7 @@ object RomLibrary {
             }
         }
         val result = out.distinctBy { it.uri }.sortedBy { it.name.lowercase() }
-        com.seedlessds.app.AppLog.i("library", "scan: ${folders(ctx).size} folders, ${result.size} games, ${android.os.SystemClock.elapsedRealtime() - t0} ms")
+        com.seedlessds.app.AppLog.i("library", "scan: ${roots.size} folders, ${result.size} games, ${android.os.SystemClock.elapsedRealtime() - t0} ms")
         return result
     }
 
