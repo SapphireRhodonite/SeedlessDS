@@ -1,6 +1,7 @@
 package com.seedlessds.app.emu
 
 import android.content.Context
+import com.seedlessds.app.AppLog
 import com.seedlessds.core.SeedlessCore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -55,18 +56,16 @@ object MultiplayerSession {
                         else -> MultiplayerDirectNetwork.existing(context, mode == 1)
                     }
                     trace?.at("group", "validate_group_route")
-                    if (!route.admits(mode, address)) return@withLock -1
+                    if (!route.admits(mode, address)) {
+                        if (mode == 2 && SettingsRepo.global.appLogFile)
+                            AppLog.w("GuestRoomDiag", "phase=group operation=validate_group_route result=-1")
+                        return@withLock -1
+                    }
                     onGroup()
                     trace?.at("native_start", "prepare_local_identity")
                     val identity = mac(context.applicationContext)
                     trace?.at("native_start", "native_start")
-                    val result = if (trace == null) {
-                        SeedlessCore.multiplayerStart(mode, player, route.local.address, route.owner.address, route.index, identity, maximum)
-                    } else {
-                        val detail = arrayOfNulls<String>(1)
-                        SeedlessCore.multiplayerStartDiagnostic(mode, player, route.local.address, route.owner.address, route.index, identity,
-                            maximum, detail).also { if (it != 0) trace.failed(it, detail[0]) }
-                    }
+                    val result = startNative(mode, player, route, identity, maximum, trace)
                     if (result == 0) group = route
                     else if (result != -2) group = null
                     if (managed && result != 0) closeGroup()
@@ -78,6 +77,25 @@ object MultiplayerSession {
                 }
             }
         }
+
+    private fun startNative(mode: Int, player: ByteArray, route: MultiplayerGroup, identity: ByteArray,
+        maximum: Int, trace: HostRoomDiagnostics?): Int {
+        val guestLog = mode == 2 && SettingsRepo.global.appLogFile
+        if (trace == null && !guestLog)
+            return SeedlessCore.multiplayerStart(mode, player, route.local.address, route.owner.address, route.index, identity, maximum)
+
+        val detail = arrayOfNulls<String>(1)
+        val result = SeedlessCore.multiplayerStartDiagnostic(mode, player, route.local.address, route.owner.address, route.index,
+            identity, maximum, detail)
+        if (result != 0) {
+            trace?.failed(result, detail[0])
+            if (guestLog && SettingsRepo.global.appLogFile) {
+                val operation = detail[0] ?: "operation=native_start"
+                AppLog.w("GuestRoomDiag", "phase=native_start $operation result=$result")
+            }
+        }
+        return result
+    }
 
     private suspend fun closeGroup() {
         try {
