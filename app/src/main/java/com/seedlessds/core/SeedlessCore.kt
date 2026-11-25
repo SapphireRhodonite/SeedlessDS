@@ -19,6 +19,8 @@ object SeedlessCore {
 
     @JvmStatic external fun multiplayerStart(mode: Int, name: ByteArray, local: ByteArray, owner: ByteArray,
         interfaceIndex: Int, mac: ByteArray, maximum: Int): Int
+    @JvmStatic external fun multiplayerStartDiagnostic(mode: Int, name: ByteArray, local: ByteArray, owner: ByteArray,
+        interfaceIndex: Int, mac: ByteArray, maximum: Int, diagnostic: Array<String?>): Int
     @JvmStatic external fun multiplayerBindInterface(fd: Int, interfaceIndex: Int): Int
     @JvmStatic external fun multiplayerStop(): Int
     @JvmStatic external fun multiplayerPause(paused: Boolean): Boolean

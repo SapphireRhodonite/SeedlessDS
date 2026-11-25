@@ -29,6 +29,7 @@ import kotlin.coroutines.resumeWithException
 
 object MultiplayerDirectNetwork {
     internal data class Network(val route: MultiplayerGroup, val password: String)
+    internal class ActionFailure(val reason: Int) : IllegalStateException("Direct Wi-Fi failed: $reason")
 
     data class Room(val device: String, val record: Map<String, String>, val seen: Long)
 
@@ -45,22 +46,29 @@ object MultiplayerDirectNetwork {
     fun permission(): String = if (Build.VERSION.SDK_INT >= 33)
         Manifest.permission.NEARBY_WIFI_DEVICES else Manifest.permission.ACCESS_FINE_LOCATION
 
-    fun checkAvailable(context: Context) {
+    internal fun checkAvailable(context: Context, trace: HostRoomDiagnostics? = null) {
+        trace?.at("preflight", "check_p2p_support")
         check(supported(context)) { "Direct Wi-Fi is unavailable" }
+        trace?.at("preflight", "check_p2p_permission")
         check(context.checkSelfPermission(permission()) == PackageManager.PERMISSION_GRANTED) { "Wi-Fi permission is required" }
+        trace?.at("preflight", "check_wifi_enabled")
         check((context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager)?.isWifiEnabled == true) {
             "Wi-Fi is disabled"
         }
     }
 
-    internal suspend fun create(context: Context, code: String): MultiplayerGroup = withContext(Dispatchers.Main.immediate) {
-        checkAvailable(context)
+    internal suspend fun create(context: Context, code: String, trace: HostRoomDiagnostics? = null): MultiplayerGroup = withContext(Dispatchers.Main.immediate) {
+        checkAvailable(context, trace)
+        trace?.at("group", "check_group_idle")
         check(owner == null && member == null)
         val application = context.applicationContext
+        trace?.at("group", "p2p_manager")
         val manager = application.getSystemService(Context.WIFI_P2P_SERVICE) as? WifiP2pManager
             ?: error("Direct Wi-Fi is unavailable")
+        trace?.at("group", "p2p_channel")
         val channel = manager.initialize(application, Looper.getMainLooper(), null)
             ?: error("Direct Wi-Fi channel is unavailable")
+        trace?.at("group", "prepare_group")
         val random = SecureRandom()
         fun token(size: Int): String = ByteArray(size).also { random.nextBytes(it) }
             .joinToString("") { "%02X".format(it.toInt() and 255) }
@@ -71,19 +79,24 @@ object MultiplayerDirectNetwork {
             val preferences = withContext(Dispatchers.IO) {
                 application.getSharedPreferences("seedless_multiplayer", Context.MODE_PRIVATE)
             }
+            trace?.at("group", "read_previous_group")
             val previous = group(pending)
             if (previous != null) {
+                trace?.at("group", "check_previous_group")
                 val previousName = withContext(Dispatchers.IO) { preferences.getString("direct_network_name", null) }
                 check(previous.networkName == previousName || roomNetwork(previous.networkName)) {
                     "Another direct Wi-Fi group is already active"
                 }
+                trace?.at("group", "remove_previous_group")
                 remove(pending, previous.networkName)
             }
+            trace?.at("group", "remember_group")
             withContext(Dispatchers.IO) {
                 check(preferences.edit().putString("direct_network_name", pending.name).commit()) {
                     "Could not remember the direct network"
                 }
             }
+            trace?.at("group", "build_group_config")
             @Suppress("DEPRECATION")
             val frequency = (application.getSystemService(Context.WIFI_SERVICE) as? WifiManager)?.connectionInfo?.frequency ?: -1
             val builder = WifiP2pConfig.Builder().setNetworkName(pending.name).setPassphrase(password)
@@ -91,7 +104,9 @@ object MultiplayerDirectNetwork {
             if (frequency in 4900..5900) builder.setGroupOperatingFrequency(frequency)
             else builder.setGroupOperatingBand(WifiP2pConfig.GROUP_OWNER_BAND_5GHZ)
             val config = builder.build()
+            trace?.at("group", "create_group")
             action { manager.createGroup(channel, config, it) }
+            trace?.at("group", "await_group_route")
             awaitGroup(pending, true, 20_000).also { current = Network(it, password) }
         } catch (error: Throwable) {
             withContext(NonCancellable) {
@@ -282,7 +297,7 @@ object MultiplayerDirectNetwork {
                     if (continuation.isActive) continuation.resume(Unit)
                 }
                 override fun onFailure(reason: Int) {
-                    if (continuation.isActive) continuation.resumeWithException(IllegalStateException("Direct Wi-Fi failed: $reason"))
+                    if (continuation.isActive) continuation.resumeWithException(ActionFailure(reason))
                 }
             })
         }

@@ -151,37 +151,50 @@ object MultiplayerRoom {
         return (1..4).map { CODE_ALPHABET[random.nextInt(CODE_ALPHABET.length)] }.joinToString("")
     }
 
-    suspend fun host(context: Context, profile: MultiplayerProfile, play: Play, game: Game?, maximum: Int): Int =
+    internal suspend fun host(context: Context, profile: MultiplayerProfile, play: Play, game: Game?, maximum: Int,
+        trace: HostRoomDiagnostics?): Int =
         operations.withLock {
+            trace?.at("preflight", "close_previous_admission")
             closeChannel()
             mutableState.value = null
             val code = newCode()
-            val result = MultiplayerSession.start(context, 1, profile.nickname, direct = true, maximum = maximum, code = code)
+            val result = MultiplayerSession.start(context, 1, profile.nickname, direct = true, maximum = maximum, code = code, trace = trace)
             if (result != 0) return@withLock result
             try {
+                trace?.at("admission", "get_group_route")
                 val network = checkNotNull(MultiplayerDirectNetwork.current)
                 val route = network.route
                 val (socket, port) = withContext(Dispatchers.IO) {
+                    trace?.at("admission", "tcp_socket")
                     val fd = Os.socket(OsConstants.AF_INET, OsConstants.SOCK_STREAM, 0)
                     try {
+                        trace?.at("admission", "tcp_duplicate_fd")
                         ParcelFileDescriptor.dup(fd).use {
-                            bindInterface(it, route, allowAddressBoundListener = true)
+                            trace?.at("admission", "tcp_bind_interface")
+                            bindInterface(it, route, allowAddressBoundListener = true, trace = trace)
                         }
+                        trace?.at("admission", "tcp_reuseaddr")
                         Os.setsockoptInt(fd, OsConstants.SOL_SOCKET, OsConstants.SO_REUSEADDR, 1)
+                        trace?.at("admission", "tcp_bind")
                         try {
                             Os.bind(fd, route.local, PORT)
                         } catch (error: ErrnoException) {
                             if (error.errno != OsConstants.EADDRINUSE) throw error
+                            trace?.at("admission", "tcp_bind_ephemeral")
                             Os.bind(fd, route.local, 0)
                         }
+                        trace?.at("admission", "tcp_listen")
                         Os.listen(fd, 16)
                         server = fd
+                        trace?.at("admission", "tcp_getsockname")
                         fd to (Os.getsockname(fd) as InetSocketAddress).port
                     } catch (error: Throwable) {
+                        trace?.failed(error)
                         Os.close(fd)
                         throw error
                     }
                 }
+                trace?.at("admission", "open_admission")
                 localProfile = profile
                 val info = Info(code, profile, play, game, maximum, true, route.name, network.password,
                     route.owner.hostAddress.orEmpty(), port, listOf(Member(HOST_KEY, profile, game != null)), 0)
@@ -189,9 +202,11 @@ object MultiplayerRoom {
                 val scope = open()
                 scope.launch { accept(socket) }
                 scope.launch { announce() }
+                trace?.at("admission", "advertise_room")
                 advertise()
                 0
             } catch (error: Throwable) {
+                trace?.failed(error)
                 withContext(NonCancellable) {
                     closeChannel()
                     mutableState.value = null
@@ -217,9 +232,10 @@ object MultiplayerRoom {
         }
 
     private fun bindInterface(fd: ParcelFileDescriptor, route: MultiplayerGroup,
-        allowAddressBoundListener: Boolean = false) {
+        allowAddressBoundListener: Boolean = false, trace: HostRoomDiagnostics? = null) {
         val result = SeedlessCore.multiplayerBindInterface(fd.fd, route.index)
         check(result == 0 || (allowAddressBoundListener && result == INTERFACE_PERMISSION_DENIED)) {
+            trace?.failed(result)
             "Could not bind Wi-Fi Direct interface"
         }
     }

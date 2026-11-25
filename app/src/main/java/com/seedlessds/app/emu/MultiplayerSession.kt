@@ -28,37 +28,51 @@ object MultiplayerSession {
         return bytes
     }
 
-    suspend fun start(context: Context, mode: Int, name: String, address: String = "", direct: Boolean = false,
-        maximum: Int = 16, code: String = "", target: MultiplayerRoom.Target? = null, onGroup: () -> Unit = {}): Int =
+    internal suspend fun start(context: Context, mode: Int, name: String, address: String = "", direct: Boolean = false,
+        maximum: Int = 16, code: String = "", target: MultiplayerRoom.Target? = null, trace: HostRoomDiagnostics? = null,
+        onGroup: () -> Unit = {}): Int =
         withContext(Dispatchers.IO) {
             operations.withLock {
+                trace?.at("preflight", "validate_host_arguments")
                 val player = name.trim().toByteArray(Charsets.UTF_8)
                 if (mode !in 1..2 || player.size !in 1..31 || maximum !in 2..16 ||
                     (direct && (mode != 1 || address.isNotEmpty())) ||
                     (target != null && (mode != 2 || address.isNotEmpty() || target.network.isBlank() || target.password.isEmpty()))) return@withLock -1
-                MultiplayerDirectNetwork.checkAvailable(context)
+                MultiplayerDirectNetwork.checkAvailable(context, trace)
                 val managed = direct || target != null
                 if (managed) {
+                    trace?.at("preflight", "stop_previous_session")
                     val stopped = SeedlessCore.multiplayerStop()
                     if (stopped != 0) return@withLock stopped
                     group = null
+                    trace?.at("preflight", "close_previous_group")
                     closeGroup()
                 }
                 try {
                     val route = when {
-                        direct -> MultiplayerDirectNetwork.create(context, code)
+                        direct -> MultiplayerDirectNetwork.create(context, code, trace)
                         target != null -> MultiplayerDirectNetwork.join(context, target.network, target.password)
                         else -> MultiplayerDirectNetwork.existing(context, mode == 1)
                     }
+                    trace?.at("group", "validate_group_route")
                     if (!route.admits(mode, address)) return@withLock -1
                     onGroup()
-                    val result = SeedlessCore.multiplayerStart(mode, player, route.local.address, route.owner.address,
-                        route.index, mac(context.applicationContext), maximum)
+                    trace?.at("native_start", "prepare_local_identity")
+                    val identity = mac(context.applicationContext)
+                    trace?.at("native_start", "native_start")
+                    val result = if (trace == null) {
+                        SeedlessCore.multiplayerStart(mode, player, route.local.address, route.owner.address, route.index, identity, maximum)
+                    } else {
+                        val detail = arrayOfNulls<String>(1)
+                        SeedlessCore.multiplayerStartDiagnostic(mode, player, route.local.address, route.owner.address, route.index, identity,
+                            maximum, detail).also { if (it != 0) trace.failed(it, detail[0]) }
+                    }
                     if (result == 0) group = route
                     else if (result != -2) group = null
                     if (managed && result != 0) closeGroup()
                     result
                 } catch (error: Throwable) {
+                    trace?.failed(error)
                     if (managed) withContext(NonCancellable) { closeGroup() }
                     throw error
                 }

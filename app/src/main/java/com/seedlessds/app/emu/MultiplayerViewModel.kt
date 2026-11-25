@@ -135,22 +135,29 @@ class MultiplayerViewModel(application: Application) : AndroidViewModel(applicat
         mutableFailure.value = null
         stopSearch()
         viewModelScope.launch {
+            val trace = if (SettingsRepo.global.appLogFile) HostRoomDiagnostics() else null
             val ok = try {
                 val game = resolveHostSelection(play, rom, showAll)
                 if (play != MultiplayerRoom.Play.CHAT && game == null) {
+                    trace?.failed(-1)
                     false
                 } else {
-                    val result = MultiplayerRoom.host(context, profile.value, play, game, maximum)
-                    if (result != 0) mutableFailure.value = Failure.Message(code(result))
+                    val result = MultiplayerRoom.host(context, profile.value, play, game, maximum, trace)
+                    if (result != 0) {
+                        trace?.failed(result)
+                        mutableFailure.value = Failure.Message(code(result))
+                    }
                     result == 0
                 }
             } catch (error: Exception) {
                 if (error is CancellationException && error !is TimeoutCancellationException) throw error
+                trace?.failed(error)
                 com.seedlessds.app.AppLog.e("Multiplayer", "Could not open the room", error)
                 mutableFailure.value = Failure.Message(R.string.multiplayer_direct_failed)
                 false
             } finally {
                 mutableBusy.value = false
+                if (trace != null) launch(Dispatchers.IO) { trace.write() }
             }
             poll()
             done(ok)

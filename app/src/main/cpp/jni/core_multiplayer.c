@@ -23,11 +23,9 @@ static int read_fixed(JNIEnv *env, jbyteArray input, void *output, jsize size)
     return !(*env)->ExceptionCheck(env);
 }
 
-JNIEXPORT jint JNICALL
-Java_com_seedlessds_core_SeedlessCore_multiplayerStart(JNIEnv *env, jclass cls,
-    jint mode, jbyteArray name, jbyteArray local, jbyteArray owner, jint index, jbyteArray mac, jint maximum)
+static jint start_multiplayer(JNIEnv *env, jint mode, jbyteArray name, jbyteArray local,
+    jbyteArray owner, jint index, jbyteArray mac, jint maximum, jobjectArray diagnostic)
 {
-    (void)cls;
     char player[32];
     uint32_t local_address, owner_address;
     uint8_t identity[6];
@@ -35,7 +33,36 @@ Java_com_seedlessds_core_SeedlessCore_multiplayerStart(JNIEnv *env, jclass cls,
         !read_fixed(env, local, &local_address, sizeof(local_address)) ||
         !read_fixed(env, owner, &owner_address, sizeof(owner_address)) ||
         !read_fixed(env, mac, identity, sizeof(identity))) return -1;
-    return seedless_mp_start_direct(mode, player, local_address, owner_address, (unsigned)index, identity, maximum);
+    if (!diagnostic)
+        return seedless_mp_start_direct(mode, player, local_address, owner_address, (unsigned)index, identity, maximum);
+    char output[192];
+    const int result = seedless_mp_start_direct_report(mode, player, local_address, owner_address,
+        (unsigned)index, identity, maximum, output, sizeof(output));
+    if (result != 0 && output[0]) {
+        jstring detail = (*env)->NewStringUTF(env, output);
+        if ((*env)->ExceptionCheck(env) || !detail) return result;
+        (*env)->SetObjectArrayElement(env, diagnostic, 0, detail);
+        if ((*env)->ExceptionCheck(env)) return result;
+        (*env)->DeleteLocalRef(env, detail);
+    }
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_seedlessds_core_SeedlessCore_multiplayerStart(JNIEnv *env, jclass cls,
+    jint mode, jbyteArray name, jbyteArray local, jbyteArray owner, jint index, jbyteArray mac, jint maximum)
+{
+    (void)cls;
+    return start_multiplayer(env, mode, name, local, owner, index, mac, maximum, NULL);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_seedlessds_core_SeedlessCore_multiplayerStartDiagnostic(JNIEnv *env, jclass cls,
+    jint mode, jbyteArray name, jbyteArray local, jbyteArray owner, jint index, jbyteArray mac, jint maximum,
+    jobjectArray diagnostic)
+{
+    (void)cls;
+    return start_multiplayer(env, mode, name, local, owner, index, mac, maximum, diagnostic);
 }
 
 JNIEXPORT jint JNICALL
