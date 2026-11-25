@@ -1,6 +1,9 @@
 package com.seedlessds.app.emu
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 object ControlLayout {
     private const val PREFS = "ctrl_layout"
@@ -9,6 +12,9 @@ object ControlLayout {
     private val offsets = HashMap<String, Pair<Float, Float>>()
     private val scales = HashMap<String, Float>()
     private val hidden = HashSet<String>()
+
+    var useLegacyStartSelectAnchor by mutableStateOf(false)
+        private set
 
     @Volatile var topScale: Float = 1f
     @Volatile var topOffX: Float = 0f
@@ -24,6 +30,7 @@ object ControlLayout {
 
     fun load(ctx: Context) {
         val p = ctx.getSharedPreferences(PREFS, 0)
+        useLegacyStartSelectAnchor = p.getBoolean("legacy_start_select_anchor", p.contains("startselect_x"))
         offsets.clear(); scales.clear()
         for (id in ids) {
             offsets[id] = p.getFloat("${id}_x", 0f) to p.getFloat("${id}_y", 0f)
@@ -52,6 +59,7 @@ object ControlLayout {
         scaleValues: Map<String, Float>,
     ) {
         val e = ctx.getSharedPreferences(PREFS, 0).edit()
+        e.putBoolean("legacy_start_select_anchor", useLegacyStartSelectAnchor)
         for ((id, off) in offsetValues) { e.putFloat("${id}_x", off.first); e.putFloat("${id}_y", off.second) }
         for ((id, s) in scaleValues) { e.putFloat("${id}_s", s) }
         e.putFloat("top_scale", topScale); e.putFloat("top_offx", topOffX); e.putFloat("top_offy", topOffY)
@@ -70,6 +78,7 @@ object ControlLayout {
 
     fun reset(ctx: Context) {
         ctx.getSharedPreferences(PREFS, 0).edit().clear().apply()
+        useLegacyStartSelectAnchor = false
         offsets.clear(); scales.clear(); hidden.clear()
         for (id in ids) { offsets[id] = 0f to 0f; scales[id] = 1f }
         topScale = 1f; topOffX = 0f; topOffY = 0f

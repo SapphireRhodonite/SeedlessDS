@@ -975,7 +975,12 @@ private fun ControlsOverlay(
             if (isVisible("dpad")) Dpad(Modifier.align(Alignment.BottomStart).ctrl("dpad").padding(16.dp), glView, alpha, haptic, editMode, style)
             if (isVisible("face")) FaceButtons(Modifier.align(Alignment.BottomEnd).ctrl("face").padding(16.dp), glView, alpha, haptic, editMode, style)
 
-            if (settings.showStartSelect && isVisible("startselect")) Row(Modifier.align(Alignment.BottomCenter).ctrl("startselect").padding(bottom = 20.dp),
+            val configuration = LocalConfiguration.current
+            val startSelectLift = if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT &&
+                !ControlLayout.useLegacyStartSelectAnchor && configuration.screenWidthDp < 576
+            ) 172.dp else 0.dp
+            if (settings.showStartSelect && isVisible("startselect")) Row(Modifier.align(Alignment.BottomCenter)
+                .offset(y = -startSelectLift).ctrl("startselect").padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 PadButton(uiContext.getString(R.string.common_select), Modifier.size(96.dp, 34.dp), RoundedCornerShape(16.dp), alpha, haptic, editMode, style) { glView.setButton(C.SELECT, it) }
                 PadButton(uiContext.getString(R.string.common_start), Modifier.size(96.dp, 34.dp), RoundedCornerShape(16.dp), alpha, haptic, editMode, style) { glView.setButton(C.START, it) }
