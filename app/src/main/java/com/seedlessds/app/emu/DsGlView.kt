@@ -31,6 +31,23 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
     val bottomScreenRect: FloatArray get() = renderer.bottomScreenRect
     val topScreenRect: FloatArray get() = renderer.topScreenRect
 
+    @Volatile private var editingScreens = false
+
+    internal fun showEditorGeometry(editing: Boolean, ready: () -> Unit) {
+        if (editingScreens == editing) return
+        editingScreens = editing
+        queueEvent {
+            renderer.reapplyDisplay()
+            post { ready() }
+        }
+    }
+
+    internal fun supportsScreenGap(cfg: DsSettings): Boolean =
+        !DualScreenPresets.singleScreen(cfg) && !ExternalSurface.attached && cfg.screenLayout != 1 &&
+            ControlLayout.topScale == 1f && ControlLayout.botScale == 1f &&
+            ControlLayout.topOffX == 0f && ControlLayout.topOffY == 0f &&
+            ControlLayout.botOffX == 0f && ControlLayout.botOffY == 0f
+
     fun applyDisplaySettings() = queueEvent { renderer.reapplyDisplay() }
 
     @Volatile private var performanceOverlay: SurfaceOverlayFrame? = null
@@ -518,11 +535,14 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
                 val (sw, sh) = fitAspect(w.toFloat(), h.toFloat())
                 return floatArrayOf((w - sw) / 2f, (h - sh) / 2f, sw, sh) to null
             }
+            val gap = if (!editingScreens && SettingsRepo.screenGapDp > 0 && supportsScreenGap(cfg))
+                SettingsRepo.screenGapDp * resources.displayMetrics.density else 0f
             return when (cfg.screenLayout) {
                 2 -> {
-                    val (sw, sh) = fitAspect(w.toFloat(), h / 2f)
+                    val space = gap.coerceAtMost((h - if (cfg.integerScale) 384f else 2f).coerceAtLeast(0f))
+                    val (sw, sh) = fitAspect(w.toFloat(), (h - space) / 2f)
                     val x = (w - sw) / 2f
-                    floatArrayOf(x, h / 2f - sh, sw, sh) to floatArrayOf(x, h / 2f, sw, sh)
+                    floatArrayOf(x, (h - space) / 2f - sh, sw, sh) to floatArrayOf(x, (h + space) / 2f, sw, sh)
                 }
                 1 -> {
                     val (bw, bh) = fitAspect(w * 0.72f, h.toFloat())
@@ -532,14 +552,25 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
                     top to bot
                 }
                 4 -> {
-                    val halfW = w / 2f
-                    floatArrayOf(0f, 0f, halfW, h.toFloat()) to floatArrayOf(halfW, 0f, halfW, h.toFloat())
+                    val space = gap.coerceAtMost((w - 2f).coerceAtLeast(0f))
+                    val halfW = (w - space) / 2f
+                    floatArrayOf(0f, 0f, halfW, h.toFloat()) to floatArrayOf(halfW + space, 0f, halfW, h.toFloat())
                 }
                 else -> {
                     val halfW = w / 2f
-                    val (sw, sh) = fitAspect(halfW, h.toFloat())
-                    val y = (h - sh) / 2f
-                    floatArrayOf((halfW - sw) / 2f, y, sw, sh) to floatArrayOf(halfW + (halfW - sw) / 2f, y, sw, sh)
+                    val (baseW, baseH) = fitAspect(halfW, h.toFloat())
+                    val originalSpace = halfW - baseW
+                    val extra = gap.coerceAtMost((w - originalSpace - if (cfg.integerScale) 512f else 2f).coerceAtLeast(0f))
+                    if (extra == 0f) {
+                        val x = originalSpace / 2f
+                        val y = (h - baseH) / 2f
+                        floatArrayOf(x, y, baseW, baseH) to floatArrayOf(halfW + x, y, baseW, baseH)
+                    } else {
+                        val innerEdge = halfW - (originalSpace + extra) / 2f
+                        val (sw, sh) = fitAspect(innerEdge, h.toFloat())
+                        val y = (h - sh) / 2f
+                        floatArrayOf(innerEdge - sw, y, sw, sh) to floatArrayOf(w - innerEdge, y, sw, sh)
+                    }
                 }
             }
         }
@@ -633,7 +664,7 @@ class DsGlView(context: Context, val lowLatency: Boolean) : SurfaceView(context)
 
         private fun displayKeyOf(cfg: DsSettings): String = listOf(
             viewW, viewH, cfg.displayFilter, cfg.hires3D, cfg.gl16bit, cfg.internalRes, cfg.integerScale, cfg.screenLayout,
-            cfg.singleScreen, cfg.singleBottom, cfg.swapScreens, cfg.dualScreenPreset, cfg.dsKeepRatio, cfg.dsIntFillW,
+            SettingsRepo.screenGapDp, editingScreens, cfg.singleScreen, cfg.singleBottom, cfg.swapScreens, cfg.dualScreenPreset, cfg.dsKeepRatio, cfg.dsIntFillW,
             cfg.dsIntFillH, cfg.dsIntAlign, cfg.dsSameSize, cfg.extDisplayType, cfg.extDisplayScreen,
             ControlLayout.topScale, ControlLayout.topOffX, ControlLayout.topOffY,
             ControlLayout.botScale, ControlLayout.botOffX, ControlLayout.botOffY,

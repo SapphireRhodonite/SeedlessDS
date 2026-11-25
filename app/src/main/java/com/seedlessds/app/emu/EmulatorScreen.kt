@@ -172,6 +172,7 @@ fun EmulatorScreen(
     var perGame by remember { mutableStateOf(initialPerGame) }
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val emulationBlocked = overlay != Overlay.NONE
+    val pausedWithExternal = remember(emulationBlocked) { emulationBlocked && hasExternal() }
     androidx.compose.runtime.LaunchedEffect(emulationBlocked) { onMenuVisibilityChange(emulationBlocked) }
     var editingControls by remember { mutableStateOf(false) }
     val offsets = remember {
@@ -187,6 +188,9 @@ fun EmulatorScreen(
     var selectedId by remember { mutableStateOf<String?>(null) }
     var rectTick by remember { mutableStateOf(0) }
     var canvasPx by remember { mutableStateOf(IntSize.Zero) }
+    androidx.compose.runtime.LaunchedEffect(editingControls) {
+        glView.showEditorGeometry(editingControls) { rectTick++ }
+    }
     val controlBounds = remember { mutableStateMapOf<String, Rect>() }
     var toolbarOffset by remember { mutableStateOf(androidx.compose.ui.unit.IntOffset.Zero) }
     val hiddenSet = remember {
@@ -389,6 +393,12 @@ fun EmulatorScreen(
                 onSwapScreens = { applyDisplayPersist { it.copy(swapScreens = !it.swapScreens) }; overlay = Overlay.NONE },
                 onCycleLayout = { applyDisplayPersist { it.copy(screenLayout = nextLayout(it.screenLayout)) }; overlay = Overlay.NONE },
                 onPresets = { overlay = Overlay.PRESETS },
+                screenGapDp = SettingsRepo.screenGapDp.takeIf { !pausedWithExternal && glView.supportsScreenGap(SettingsRepo.current) },
+                onCycleGap = {
+                    SettingsRepo.cycleScreenGap(ctx)
+                    glView.applyDisplaySettings()
+                    overlay = Overlay.NONE
+                },
                 selectedState = menuSelected,
                 layoutMatters = !(DualScreenPresets.configuredSingle(SettingsRepo.current) && SettingsRepo.current.extDisplayType != 0),
                 onToggleLid = { lidClosed = !lidClosed; SeedlessCore.hinge(lidClosed); overlay = Overlay.NONE },
@@ -675,6 +685,8 @@ private fun GameMenu(
     onSwapScreens: () -> Unit,
     onCycleLayout: () -> Unit,
     onPresets: () -> Unit,
+    screenGapDp: Int?,
+    onCycleGap: () -> Unit,
     selectedState: androidx.compose.runtime.MutableIntState,
     layoutMatters: Boolean,
     onToggleLid: () -> Unit,
@@ -705,6 +717,16 @@ private fun GameMenu(
             if (controlsHidden) uiContext.getString(R.string.menu_show_controls) else uiContext.getString(R.string.menu_hide_controls), onToggleControls))
         add(MenuOption(Icons.Rounded.SwapVert, uiContext.getString(R.string.common_swap_screens), onSwapScreens))
         add(MenuOption(Icons.Rounded.Dashboard, uiContext.getString(R.string.common_dual_screen_presets), onPresets))
+        if (screenGapDp != null) {
+            val label = when (screenGapDp) {
+                8 -> R.string.screen_gap_small
+                16 -> R.string.settings_medium
+                24 -> R.string.screen_gap_large
+                else -> R.string.settings_off
+            }
+            add(MenuOption(Icons.Rounded.SwapVert, uiContext.getString(R.string.screen_gap), onCycleGap,
+                trailing = uiContext.getString(label)))
+        }
         if (layoutMatters) add(MenuOption(Icons.Rounded.Dashboard, uiContext.getString(R.string.menu_change_layout), onCycleLayout))
         add(MenuOption(Icons.Rounded.Bedtime, if (lidClosed) uiContext.getString(R.string.menu_open_lid) else uiContext.getString(R.string.menu_close_lid), onToggleLid))
         add(MenuOption(Icons.AutoMirrored.Rounded.HelpOutline, uiContext.getString(R.string.common_help), onHelp))

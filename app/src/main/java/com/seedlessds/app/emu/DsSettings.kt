@@ -177,6 +177,14 @@ object SettingsRepo {
     var current: DsSettings = DsSettings()
         private set
 
+    @Volatile var screenGapDp = 0
+        private set
+
+    fun cycleScreenGap(ctx: Context) {
+        screenGapDp = (screenGapDp + 8) % 32
+        configPrefs(ctx).edit().putInt("_ScreenGapDp", screenGapDp).apply()
+    }
+
     private fun configPrefs(ctx: Context) =
         ctx.getSharedPreferences(PREFS + Profiles.suffix(ctx), Context.MODE_PRIVATE)
 
@@ -211,6 +219,7 @@ object SettingsRepo {
     fun load(ctx: Context): DsSettings {
         val cp = configPrefs(ctx)
         fastForward = cp.getBoolean("_FfwdAtStart", false)
+        screenGapDp = cp.getInt("_ScreenGapDp", 0).takeIf { it in 0..24 && it % 8 == 0 } ?: 0
         global = readFrom(cp)
         current = global
         return global

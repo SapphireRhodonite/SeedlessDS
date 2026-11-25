@@ -708,4 +708,7 @@
     <string name="settings_alt_app_icon_error">无法更改应用图标，请重试。</string>
     <string name="microphone_permission_settings">如需使用设备麦克风，请在 Android 的 SeedlessDS 应用权限设置中允许使用麦克风。</string>
     <string name="presets_automatic_description">在内置双屏的掌机上，上方屏幕显示上屏，下方屏幕显示触摸屏。</string>
+    <string name="screen_gap">屏幕间距</string>
+    <string name="screen_gap_small">小</string>
+    <string name="screen_gap_large">大</string>
 </resources>
