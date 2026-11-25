@@ -168,7 +168,7 @@ internal class ExternalThread(
             GLES20.glClearColor(0f, 0f, 0f, 1f)
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
             val settings = SettingsRepo.current
-            val screen = (settings.extDisplayScreen xor (if (settings.swapScreens) 1 else 0)) and 1
+            val screen = DualScreenPresets.externalScreen(settings)
             val texture = if (screen == 1) bottom else top
             try {
                 if (texture != 0) {
@@ -381,7 +381,7 @@ internal class ExternalThread(
         if (target || !useOutputFence || !surfacePrepared) GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         surfacePrepared = false
         val cfgApp = SettingsRepo.current
-        val screen = (cfgApp.extDisplayScreen xor (if (cfgApp.swapScreens) 1 else 0)) and 1
+        val screen = DualScreenPresets.externalScreen(cfgApp)
         val tex = if (screen == 1) bottom else top
         try {
             if (tex != 0) {

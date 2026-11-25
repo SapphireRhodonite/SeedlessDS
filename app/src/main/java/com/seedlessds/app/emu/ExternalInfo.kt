@@ -6,6 +6,10 @@ import android.content.Context
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.view.WindowManager
+import android.view.ViewTreeObserver
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import android.view.Display
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
@@ -91,6 +95,18 @@ class ExternalInfoPresentation(
 }
 
 class ExternalInfoController(private val activity: ComponentActivity) {
+    companion object {
+        private val reservedPanels = MutableLiveData<Map<Any, Int>>(emptyMap())
+
+        internal fun reservePanel(owner: Any, displayId: Int?) {
+            val current = reservedPanels.value.orEmpty()
+            if (current[owner] == displayId) return
+            reservedPanels.value = if (displayId == null) current - owner else current + (owner to displayId)
+        }
+    }
+
+    private val panelObserver = Observer<Map<Any, Int>> { refresh() }
+
 
     private var presentation: ExternalInfoPresentation? = null
     private var attached = false
@@ -105,15 +121,21 @@ class ExternalInfoController(private val activity: ComponentActivity) {
         override fun onDisplayChanged(displayId: Int) = refresh()
     }
 
+    private val focusListener = ViewTreeObserver.OnWindowFocusChangeListener { refresh() }
+
     fun attach() {
         if (attached) return
         attached = true
+        reservedPanels.observe(activity, panelObserver)
+        activity.window.decorView.viewTreeObserver.addOnWindowFocusChangeListener(focusListener)
         displayManager.registerDisplayListener(displayListener, null)
         refresh()
     }
 
     fun detach() {
         attached = false
+        reservedPanels.removeObserver(panelObserver)
+        activity.window.decorView.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener)
         runCatching { displayManager.unregisterDisplayListener(displayListener) }
         presentation?.dismiss()
         presentation = null
@@ -129,9 +151,10 @@ class ExternalInfoController(private val activity: ComponentActivity) {
 
     private fun refresh() {
         if (!attached) return
-        val display = displayManager
+        val ownId = ContextCompat.getDisplayOrDefault(activity).displayId
+        val display = if (activity.hasWindowFocus()) displayManager
             .getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-            .firstOrNull { isRealDisplay(it) }
+            .firstOrNull { it.displayId != ownId && it.isValid && isRealDisplay(it) && it.displayId !in reservedPanels.value.orEmpty().values } else null
         if (display == null) {
             presentation?.dismiss()
             presentation = null

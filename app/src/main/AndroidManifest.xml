@@ -92,6 +92,13 @@
         </activity>
 
         <activity
+            android:name=".emu.GamePanelActivity"
+            android:taskAffinity="${applicationId}.game_panel"
+            android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <activity
             android:name=".emu.GameActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"

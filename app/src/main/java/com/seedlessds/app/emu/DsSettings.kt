@@ -80,7 +80,7 @@ data class DsSettings(
 
     val extDisplayDelay: Int = 1,
     val integerScale: Boolean = false,
-    val dualScreenPreset: Int = 1,
+    val dualScreenPreset: Int = DualScreenPresets.AUTOMATIC,
     val dsKeepRatio: Boolean = false,
     val dsIntFillW: Boolean = false,
     val dsIntFillH: Boolean = false,

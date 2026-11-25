@@ -1,11 +1,15 @@
 package com.seedlessds.app.emu
 
+import android.app.Activity
+import androidx.core.content.ContextCompat
 import android.app.Presentation
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.hardware.display.DeviceProductInfo
+import android.os.Build
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.view.Display
@@ -43,7 +47,8 @@ object ExternalSurface {
         geometry = Geometry(w, h, generation, intervalNs)
     }
 
-    fun clear() = synchronized(lock) {
+    fun clear(expected: Surface? = null) = synchronized(lock) {
+        if (expected != null && surface !== expected) return@synchronized
         surface = null; width = 0; height = 0; generation++; active = false; control = null
         geometry = null
     }
@@ -120,13 +125,13 @@ class ExtSurfaceView(context: Context, private val lowLatency: Boolean) : Surfac
                 ExternalSurface.publish(h.surface, w, hh,
                     if (android.os.Build.VERSION.SDK_INT >= 29) this@ExtSurfaceView.surfaceControl else null, interval)
             }
-            override fun surfaceDestroyed(h: SurfaceHolder) = ExternalSurface.clear()
+            override fun surfaceDestroyed(h: SurfaceHolder) = ExternalSurface.clear(h.surface)
         })
         keepScreenOn = true
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (touchSink == null || SettingsRepo.current.extDisplayScreen and 1 != 1) {
+        if (touchSink == null || DualScreenPresets.externalScreen(SettingsRepo.current) != 1) {
             stylusInput.cancel()
             return false
         }
@@ -183,14 +188,41 @@ private class ExtEditOverlay(ctx: Context, private val onTap: () -> Unit) : View
 }
 
 private class DsPresentation(
-    ctx: Context, display: Display, lowLatency: Boolean, cloneFrame: Boolean, touchSink: ((Boolean, Int) -> Unit)?, onTap: () -> Unit
-) : Presentation(ctx, display) {
-    val glView = ExtSurfaceView(ctx, lowLatency).apply { this.touchSink = touchSink }
-    private val frame = if (cloneFrame) PhantomFrame(ctx) { listOf(glView.screenRectPx) } else null
-    private val overlay = ExtEditOverlay(ctx, onTap).apply { glRef = glView; visibility = View.GONE }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+    private val owner: Activity, display: Display, private val openPanel: Boolean, private val hostContent: Boolean, lowLatency: Boolean, cloneFrame: Boolean, touchSink: ((Boolean, Int) -> Unit)?, onTap: () -> Unit
+) : Presentation(owner, display) {
+    private var panelSession: GamePanelActivity.Session? = null
+
+    fun showOnPanel(): Boolean {
+        if (!hostContent) {
+            show()
+            return true
+        }
+        panelSession = GamePanelActivity.open(owner, display, buildContent())
+        return panelSession != null
+    }
+
+    override fun dismiss() {
+        if (hostContent) {
+            panelSession?.close()
+            panelSession = null
+        } else super.dismiss()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (openPanel) panelSession = GamePanelActivity.open(owner, display)
+    }
+
+    override fun onStop() {
+        panelSession?.close()
+        panelSession = null
+        super.onStop()
+    }
+
+    val glView = ExtSurfaceView(context, lowLatency).apply { this.touchSink = touchSink }
+    private val frame = if (cloneFrame) PhantomFrame(context) { listOf(glView.screenRectPx) } else null
+    private val overlay = ExtEditOverlay(context, onTap).apply { glRef = glView; visibility = View.GONE }
+    private fun buildContent(): FrameLayout {
         runCatching {
             val dm = android.util.DisplayMetrics()
             @Suppress("DEPRECATION") display.getRealMetrics(dm)
@@ -202,7 +234,13 @@ private class DsPresentation(
         root.addView(glView, FrameLayout.LayoutParams(-1, -1))
         frame?.let { root.addView(it, FrameLayout.LayoutParams(-1, -1)) }
         root.addView(overlay, FrameLayout.LayoutParams(-1, -1))
-        setContentView(root)
+        return root
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        setContentView(buildContent())
         window?.let { w ->
             androidx.core.view.WindowCompat.setDecorFitsSystemWindows(w, false)
             androidx.core.view.WindowInsetsControllerCompat(w, glView).apply {
@@ -216,7 +254,7 @@ private class DsPresentation(
     fun applyDisplaySettings() { overlay.invalidate(); frame?.invalidate() }
 }
 
-class ExternalDisplayManager(private val ctx: Context, private val lowLatency: Boolean, private val cloneFrame: Boolean = false) {
+class ExternalDisplayManager(private val ctx: Activity, private val lowLatency: Boolean, private val cloneFrame: Boolean = false) {
     private val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private var presentation: DsPresentation? = null
     private var started = false
@@ -238,6 +276,9 @@ class ExternalDisplayManager(private val ctx: Context, private val lowLatency: B
 
     fun stop() {
         started = false
+        ExternalInfoController.reservePanel(this, null)
+        DualScreenPresets.setMainOnLowerPanel(false)
+        ExternalSurface.attached = false
         runCatching { dm.unregisterDisplayListener(listener) }
         dismiss()
     }
@@ -263,13 +304,43 @@ class ExternalDisplayManager(private val ctx: Context, private val lowLatency: B
 
     private fun refresh() {
         if (!started) return
-        val disp = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).firstOrNull { isRealDisplay(it) }
-        ExternalSurface.attached = disp != null
-        if (disp == null) { dismiss(); return }
+        val own = ContextCompat.getDisplayOrDefault(ctx)
+        val presentations = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+            .filter { it.displayId != own.displayId && it.isValid && isRealDisplay(it) }
+        val partner = if (own.isBuiltInPanel()) {
+            presentations.firstOrNull { it.isBuiltInPanel() } ?: dm.getDisplay(Display.DEFAULT_DISPLAY)?.takeIf {
+                ctx is GameActivity && it.displayId != own.displayId && it.isValid && isRealDisplay(it) &&
+                    it.isBuiltInPanel() && GamePanelActivity.canOpen(ctx, it)
+            }
+        } else null
+        val disp = partner ?: presentations.firstOrNull()
+        val builtInPair = partner != null
+        if (ctx is GameActivity) ExternalInfoController.reservePanel(this, disp?.displayId)
+        DualScreenPresets.setMainOnLowerPanel(builtInPair && disp?.displayId == Display.DEFAULT_DISPLAY)
+        if (disp == null) {
+            dismiss()
+            ExternalSurface.attached = false
+            return
+        }
         if (presentation?.display?.displayId == disp.displayId) return
         dismiss()
-        presentation = DsPresentation(ctx, disp, lowLatency, cloneFrame, touchSink) { onTap?.invoke() }.also {
-            runCatching { it.show() }; it.setEdit(editing, extSelected)
+        val openPanel = ctx is GameActivity && builtInPair && own.displayId == Display.DEFAULT_DISPLAY
+        val hostContent = presentations.none { it.displayId == disp.displayId }
+        val next = DsPresentation(ctx, disp, openPanel, hostContent, lowLatency, cloneFrame, touchSink) { onTap?.invoke() }
+        next.setEdit(editing, extSelected)
+        presentation = next.takeIf { runCatching { it.showOnPanel() }.getOrDefault(false) }
+        ExternalSurface.attached = presentation != null
+        if (presentation == null) ExternalInfoController.reservePanel(this, null)
+    }
+}
+
+private fun Display.isBuiltInPanel(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        when (deviceProductInfo?.connectionToSinkType) {
+            DeviceProductInfo.CONNECTION_TO_SINK_BUILT_IN -> return true
+            DeviceProductInfo.CONNECTION_TO_SINK_DIRECT, DeviceProductInfo.CONNECTION_TO_SINK_TRANSITIVE -> return false
+            DeviceProductInfo.CONNECTION_TO_SINK_UNKNOWN, null -> Unit
         }
     }
+    return flags and Display.FLAG_PRIVATE == 0 && (name == "Built-in Screen" || name == "Built-in Screen#2")
 }

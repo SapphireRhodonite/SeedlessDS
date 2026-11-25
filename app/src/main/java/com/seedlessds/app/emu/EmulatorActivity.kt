@@ -638,8 +638,16 @@ open class EmulatorActivity : ComponentActivity() {
         pauseEmulation()
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (this is GameActivity) {
+            ExternalInfoController.reservePanel(this, androidx.core.content.ContextCompat.getDisplayOrDefault(this).displayId)
+        }
+    }
+
     override fun onStop() {
         super.onStop()
+        if (this is GameActivity) ExternalInfoController.reservePanel(this, null)
         if (appForeground) pauseEmulation()
     }
 

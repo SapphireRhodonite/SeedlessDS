@@ -195,6 +195,7 @@ private fun presetDescriptions(uiContext: android.content.Context) = listOf(
     uiContext.getString(R.string.presets_the_screen_settings_apply_exactly_as),
     uiContext.getString(R.string.presets_top_screen_on_the_device_bottom_screen_on_the),
     uiContext.getString(R.string.presets_bottom_screen_on_the_device_top_screen_on_the),
+    uiContext.getString(R.string.presets_automatic_description),
 )
 
 @Composable

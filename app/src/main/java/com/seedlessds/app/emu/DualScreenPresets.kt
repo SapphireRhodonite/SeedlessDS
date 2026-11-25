@@ -7,6 +7,7 @@ object DualScreenPresets {
     const val OFF = 0
     const val INTERNAL_TOP = 1
     const val INTERNAL_BOTTOM = 2
+    const val AUTOMATIC = 3
 
     const val LAYOUT_FULLSCREEN = 4
     const val EXT_FULLSCREEN = 2
@@ -15,7 +16,7 @@ object DualScreenPresets {
     const val ALIGN_CENTER = 1
     const val ALIGN_BOTTOM = 2
 
-    fun labels(uiContext: android.content.Context) = listOf(uiContext.getString(R.string.presets_disabled_manual_layout), uiContext.getString(R.string.presets_top_here_bottom_on_tv), uiContext.getString(R.string.presets_bottom_here_top_on_tv))
+    fun labels(uiContext: android.content.Context) = listOf(uiContext.getString(R.string.presets_disabled_manual_layout), uiContext.getString(R.string.presets_top_here_bottom_on_tv), uiContext.getString(R.string.presets_bottom_here_top_on_tv), uiContext.getString(R.string.settings_automatic))
     fun alignLabels(uiContext: android.content.Context) = listOf(uiContext.getString(R.string.common_top), uiContext.getString(R.string.presets_centre), uiContext.getString(R.string.common_bottom))
 
 
@@ -45,7 +46,27 @@ object DualScreenPresets {
 
     fun configuredSingle(s: DsSettings): Boolean = s.dualScreenPreset != OFF || s.singleScreen
 
-    fun singleBottom(s: DsSettings): Boolean = if (s.dualScreenPreset != OFF) s.dualScreenPreset == INTERNAL_BOTTOM else s.singleBottom
+    @Volatile private var mainOnLowerPanel = false
+
+    @Synchronized fun setMainOnLowerPanel(lower: Boolean) {
+        if (mainOnLowerPanel != lower) {
+            mainOnLowerPanel = lower
+            version++
+        }
+    }
+
+    fun singleBottom(s: DsSettings): Boolean = when (s.dualScreenPreset) {
+        AUTOMATIC -> mainOnLowerPanel
+        OFF -> s.singleBottom
+        else -> s.dualScreenPreset == INTERNAL_BOTTOM
+    }
+
+    fun externalScreen(s: DsSettings): Int {
+        val screen = if (s.dualScreenPreset == AUTOMATIC) {
+            if (mainOnLowerPanel) 0 else 1
+        } else s.extDisplayScreen
+        return (screen xor (if (s.swapScreens) 1 else 0)) and 1
+    }
 
     fun apply(s: DsSettings, preset: Int): DsSettings {
         if (preset == OFF) return s.copy(dualScreenPreset = OFF)
@@ -56,7 +77,7 @@ object DualScreenPresets {
             screenLayout = LAYOUT_FULLSCREEN,
             swapScreens = false,
             extDisplayType = EXT_FULLSCREEN,
-            extDisplayScreen = if (preset == INTERNAL_TOP) 1 else 0,
+            extDisplayScreen = if (preset == INTERNAL_BOTTOM) 0 else 1,
         )
     }
 
