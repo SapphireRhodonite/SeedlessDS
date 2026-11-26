@@ -14,7 +14,23 @@ object DeviceProfiles {
 
     class Profile(val name: String, val manufacturer: String, val model: String, val device: String, val panels: List<Panel>)
 
+    private val thorPanels = listOf(Panel(1080, 1920, 6f), Panel(1080, 1240, 3.92f))
+
     val profiles = listOf(
+        Profile(
+            "AYANEO Pocket DS", "AYANEO", "Pocket DS", "PocketDS",
+            listOf(Panel(1080, 1920, 7f), Panel(768, 1024, 5f)),
+        ),
+        Profile("AYN Thor", "AYN", "AYN Thor", "kalama", thorPanels),
+        Profile("AYN Thor Lite", "AYN", "AYN Thor Lite", "kona", thorPanels),
+        Profile(
+            "Retroid Pocket Duo", "Moorechip", "Retroid Pocket Duo", "sun",
+            listOf(Panel(1080, 1920, 5.5f), Panel(1280, 960, 4.5f)),
+        ),
+        Profile(
+            "Anbernic RG DDS", "QUALCOMM", "RG DDS", "pineapple",
+            listOf(Panel(720, 1200, 4.7f), Panel(720, 960, 4f)),
+        ),
         Profile(
             "Retroid Pocket Duo Lite", "Moorechip", "Retroid Pocket Duo Lite", "trinket",
             listOf(Panel(1080, 1920, 5.5f), Panel(1280, 960, 4.2f)),
