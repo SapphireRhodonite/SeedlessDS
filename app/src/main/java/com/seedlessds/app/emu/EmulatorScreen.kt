@@ -12,6 +12,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowInfoTracker
 import android.view.MotionEvent
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -191,6 +196,18 @@ fun EmulatorScreen(
     androidx.compose.runtime.LaunchedEffect(editingControls) {
         glView.showEditorGeometry(editingControls) { rectTick++ }
     }
+    var windowOrigin by remember { mutableStateOf(IntOffset.Zero) }
+    var fold by remember(glView) { mutableStateOf<FoldingFeature?>(null) }
+    LaunchedEffect(glView) {
+        val activity = glView.context as? EmulatorActivity ?: return@LaunchedEffect
+        activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            WindowInfoTracker.getOrCreate(activity).windowLayoutInfo(activity).collect { layout ->
+                fold = layout.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull(FoldSeam::divides)
+            }
+        }
+    }
+    val seam = if (hasExternal()) null else FoldSeam.inWindow(fold, windowOrigin, canvasPx)
+    LaunchedEffect(glView, seam) { glView.setFoldSeam(seam) }
     val controlBounds = remember { mutableStateMapOf<String, Rect>() }
     var toolbarOffset by remember { mutableStateOf(androidx.compose.ui.unit.IntOffset.Zero) }
     val hiddenSet = remember {
@@ -258,7 +275,11 @@ fun EmulatorScreen(
     BackHandler(enabled = overlay == Overlay.NONE && !editingControls) { if (!settings.disableBackButton) overlay = Overlay.MENU }
     BackHandler(enabled = overlay == Overlay.MENU) { overlay = Overlay.NONE }
 
-    Box(Modifier.fillMaxSize().background(Color.Black).onSizeChanged { canvasPx = it }) {
+    Box(Modifier.fillMaxSize().background(Color.Black).onGloballyPositioned {
+        canvasPx = it.size
+        val pos = it.positionInWindow()
+        windowOrigin = IntOffset(pos.x.roundToInt(), pos.y.roundToInt())
+    }) {
         androidx.compose.ui.viewinterop.AndroidView(
             factory = { glView }, modifier = Modifier.fillMaxSize().stylusInput(glView)
         )
@@ -294,7 +315,7 @@ fun EmulatorScreen(
             }
             ControlsOverlay(glView, settings, offsets, scales, hiddenSet, selectedId,
                 { selectedId = it }, editingControls, hideControls, ::dispatchExtra,
-                if (glView.lowLatency) controlBounds else null) {
+                if (glView.lowLatency) controlBounds else null, seam) {
                 if (!editingControls) overlay = Overlay.MENU
             }
             if (settings.showFps && !editingControls) {
@@ -934,6 +955,7 @@ private fun ControlsOverlay(
     selectedId: String?, onSelect: (String) -> Unit,
     editMode: Boolean, hideControls: Boolean, dispatchExtra: (Int, Boolean) -> Unit,
     bounds: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Rect>?,
+    seam: FoldSeam?,
     onMenu: () -> Unit
 ) {
     val uiContext = androidx.compose.ui.platform.LocalContext.current
@@ -968,8 +990,7 @@ private fun ControlsOverlay(
         visibleControls?.add(id)
         val o = offsets[id] ?: (0f to 0f)
         val sc = scales[id] ?: 1f
-        var m = this
-            .offset { IntOffset(o.first.dp.roundToPx(), o.second.dp.roundToPx()) }
+        var m = (if (seam == null) this.offset { IntOffset(o.first.dp.roundToPx(), o.second.dp.roundToPx()) } else this)
             .graphicsLayer { scaleX = sc; scaleY = sc; if (editMode && hiddenSet[id] == true) this.alpha = 0.35f }
         if (bounds != null) m = m.onGloballyPositioned { bounds[id] = it.boundsInWindow() }
         if (editMode) m = m
@@ -987,21 +1008,29 @@ private fun ControlsOverlay(
 
     val showMain = !hideControls || editMode
 
+    val density = LocalDensity.current
+    fun safe(anchor: Alignment, id: String): Alignment {
+        if (seam == null) return anchor
+        val offset = offsets[id]
+        val pixels = with(density) { IntOffset((offset?.first ?: 0f).dp.roundToPx(), (offset?.second ?: 0f).dp.roundToPx()) }
+        return seam.avoid(anchor, pixels, scales[id] ?: 1f)
+    }
+
     Box(Modifier.fillMaxSize()) {
         if (showMain) {
-            if (isVisible("lbtn")) PadButton(uiContext.getString(R.string.button_l), Modifier.align(Alignment.TopStart).ctrl("lbtn").padding(12.dp).size(64.dp, 44.dp),
+            if (isVisible("lbtn")) PadButton(uiContext.getString(R.string.button_l), Modifier.align(safe(Alignment.TopStart, "lbtn")).ctrl("lbtn").padding(12.dp).size(64.dp, 44.dp),
                 RoundedCornerShape(10.dp), alpha, haptic, editMode, style) { glView.setButton(C.L, it) }
-            if (isVisible("rbtn")) PadButton(uiContext.getString(R.string.button_r), Modifier.align(Alignment.TopEnd).ctrl("rbtn").padding(12.dp).size(64.dp, 44.dp),
+            if (isVisible("rbtn")) PadButton(uiContext.getString(R.string.button_r), Modifier.align(safe(Alignment.TopEnd, "rbtn")).ctrl("rbtn").padding(12.dp).size(64.dp, 44.dp),
                 RoundedCornerShape(10.dp), alpha, haptic, editMode, style) { glView.setButton(C.R, it) }
 
-            if (isVisible("dpad")) Dpad(Modifier.align(Alignment.BottomStart).ctrl("dpad").padding(16.dp), glView, alpha, haptic, editMode, style)
-            if (isVisible("face")) FaceButtons(Modifier.align(Alignment.BottomEnd).ctrl("face").padding(16.dp), glView, alpha, haptic, editMode, style)
+            if (isVisible("dpad")) Dpad(Modifier.align(safe(Alignment.BottomStart, "dpad")).ctrl("dpad").padding(16.dp), glView, alpha, haptic, editMode, style)
+            if (isVisible("face")) FaceButtons(Modifier.align(safe(Alignment.BottomEnd, "face")).ctrl("face").padding(16.dp), glView, alpha, haptic, editMode, style)
 
             val configuration = LocalConfiguration.current
-            val startSelectLift = if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT &&
+            val startSelectLift = if (seam == null && configuration.orientation == Configuration.ORIENTATION_PORTRAIT &&
                 !ControlLayout.useLegacyStartSelectAnchor && configuration.screenWidthDp < 576
             ) 172.dp else 0.dp
-            if (settings.showStartSelect && isVisible("startselect")) Row(Modifier.align(Alignment.BottomCenter)
+            if (settings.showStartSelect && isVisible("startselect")) Row(Modifier.align(safe(Alignment.BottomCenter, "startselect"))
                 .offset(y = -startSelectLift).ctrl("startselect").padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 PadButton(uiContext.getString(R.string.common_select), Modifier.size(96.dp, 34.dp), RoundedCornerShape(16.dp), alpha, haptic, editMode, style) { glView.setButton(C.SELECT, it) }
@@ -1010,7 +1039,7 @@ private fun ControlsOverlay(
         }
 
         val extras = listOf(settings.extraFunc1, settings.extraFunc2, settings.extraFunc3)
-        if (isVisible("extra")) Column(Modifier.align(Alignment.CenterEnd).ctrl("extra").padding(end = 4.dp),
+        if (isVisible("extra")) Column(Modifier.align(safe(Alignment.CenterEnd, "extra")).ctrl("extra").padding(end = 4.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             extras.forEachIndexed { i, fn ->
                 if (fn != 0) PadButton(uiContext.getString(EXTRA_LABELS[fn] ?: R.string.unknown_symbol), Modifier.size(50.dp),
@@ -1023,7 +1052,7 @@ private fun ControlsOverlay(
             4 -> null; else -> Alignment.TopCenter
         }
         if (menuAlign != null && isVisible("menu")) Box(
-            Modifier.align(menuAlign).ctrl("menu").padding(8.dp).size(48.dp)
+            Modifier.align(safe(menuAlign, "menu")).ctrl("menu").padding(8.dp).size(48.dp)
                 .background(Color(0x55000000), CircleShape)
                 .then(if (editMode) Modifier else Modifier.pointerInput(Unit) { detectTapReleased(onMenu) }),
             contentAlignment = Alignment.Center
