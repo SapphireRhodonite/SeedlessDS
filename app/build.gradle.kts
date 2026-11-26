@@ -19,7 +19,7 @@ android {
         applicationId = "com.seedlessds.app"
         minSdk = 21
         targetSdk = 36
-        versionCode = 113
+        versionCode = 114
         versionName = "1.0.3"
 
         ndk {
