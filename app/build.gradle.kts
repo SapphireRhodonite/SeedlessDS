@@ -12,13 +12,13 @@ val coreDir = (project.findProperty("coreDir") as String?)
 
 android {
     namespace = "com.seedlessds.app"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "25.2.9519653"
 
     defaultConfig {
         applicationId = "com.seedlessds.app"
         minSdk = 21
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 113
         versionName = "1.0.3"
 
@@ -45,7 +45,14 @@ android {
 
 
 
+    val qaSigning = providers.gradleProperty("qaSigning").orNull == "true"
     signingConfigs {
+        create("playUpload") {
+            providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_STORE").orNull?.let { storeFile = file(it) }
+            storePassword = providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_STORE_PASSWORD").orNull
+            keyAlias = providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_ALIAS").orNull
+            keyPassword = providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_KEY_PASSWORD").orNull
+        }
         create("release") {
             val local = Properties()
             val localFile = rootProject.file("local.properties")
@@ -72,7 +79,13 @@ android {
             buildConfigField("boolean", "FRAME_CONTROLS", (project.findProperty("frameControls") == "true").toString())
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName(if (qaSigning) "shared" else "release")
+        }
+        create("playStore") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".playstore"
+            signingConfig = signingConfigs.getByName(if (qaSigning) "shared" else "playUpload")
+            matchingFallbacks += "release"
         }
         debug {
             isMinifyEnabled = false
