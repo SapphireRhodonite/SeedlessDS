@@ -47,16 +47,21 @@ android {
 
     val qaSigning = providers.gradleProperty("qaSigning").orNull == "true"
     signingConfigs {
+        val local = Properties()
+        val localFile = rootProject.file("local.properties")
+        if (localFile.isFile) localFile.inputStream().use { local.load(it) }
+
         create("playUpload") {
-            providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_STORE").orNull?.let { storeFile = file(it) }
-            storePassword = providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_STORE_PASSWORD").orNull
-            keyAlias = providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_ALIAS").orNull
-            keyPassword = providers.environmentVariable("SEEDLESS_PLAY_UPLOAD_KEY_PASSWORD").orNull
+            fun uploadProperty(localKey: String, environmentKey: String): String? =
+                local.getProperty(localKey)?.takeIf(String::isNotBlank)
+                    ?: providers.environmentVariable(environmentKey).orNull
+
+            uploadProperty("PLAY_UPLOAD_KEYSTORE", "SEEDLESS_PLAY_UPLOAD_STORE")?.let { storeFile = file(it) }
+            storePassword = uploadProperty("PLAY_UPLOAD_STORE_PASSWORD", "SEEDLESS_PLAY_UPLOAD_STORE_PASSWORD")
+            keyAlias = uploadProperty("PLAY_UPLOAD_KEY_ALIAS", "SEEDLESS_PLAY_UPLOAD_ALIAS")
+            keyPassword = uploadProperty("PLAY_UPLOAD_KEY_PASSWORD", "SEEDLESS_PLAY_UPLOAD_KEY_PASSWORD")
         }
         create("release") {
-            val local = Properties()
-            val localFile = rootProject.file("local.properties")
-            if (localFile.isFile) localFile.inputStream().use { local.load(it) }
             local.getProperty("MELONDS_KEYSTORE")?.let { storeFile = file(it) }
             storePassword = local.getProperty("MELONDS_KEYSTORE_PASSWORD") ?: ""
             keyAlias = local.getProperty("MELONDS_KEY_ALIAS") ?: ""
