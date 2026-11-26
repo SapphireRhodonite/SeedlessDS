@@ -9,6 +9,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.stringResource
+import com.seedlessds.app.emu.FrontendLaunch
+import com.seedlessds.app.emu.SaveLocation
+import com.seedlessds.app.emu.SeedlessConfirmDialog
+import com.seedlessds.app.emu.SettingsRepo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,9 +67,41 @@ class MainActivity : ComponentActivity() {
                         ActivityResultContracts.OpenDocumentTree()
                     ) { uri -> if (uri != null) { RomLibrary.addFolder(this, uri); refresh.intValue++ } }
 
+                    val scope = rememberCoroutineScope()
+                    var singleSavePrompt by rememberSaveable { mutableStateOf<Uri?>(null) }
                     val singlePicker = rememberLauncherForActivityResult(
                         ActivityResultContracts.OpenDocument()
-                    ) { uri -> if (uri != null) launchRom(uri, uri.lastPathSegment ?: "game.nds", takePerm = true, loadSlot = -1) }
+                    ) { uri ->
+                        if (uri != null) scope.launch {
+                            if (SettingsRepo.global.saveLocation == SaveLocation.NEXT_TO_ROM) {
+                                val game = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        val match = FrontendLaunch.resolve(applicationContext, Intent().setData(uri))
+                                            as? FrontendLaunch.Result.Game
+                                        match?.takeIf { SaveLocation.frontendSaves(applicationContext, it.uri, it.parentId, "") != null }
+                                    }.getOrNull()
+                                }
+                                if (game == null) singleSavePrompt = uri
+                                else launchRom(game.uri, game.name, takePerm = false, loadSlot = -1)
+                            } else {
+                                launchRom(uri, uri.lastPathSegment ?: "game.nds", takePerm = true, loadSlot = -1)
+                            }
+                        }
+                    }
+
+                    singleSavePrompt?.let { uri ->
+                        SeedlessConfirmDialog(
+                            title = stringResource(R.string.settings_app_storage),
+                            message = stringResource(R.string.library_single_rom_save_location),
+                            confirmLabel = stringResource(R.string.library_open_rom),
+                            onConfirm = {
+                                singleSavePrompt = null
+                                launchRom(uri, uri.lastPathSegment ?: "game.nds", takePerm = true, loadSlot = -1)
+                            },
+                            onDismiss = { singleSavePrompt = null },
+                            destructive = false,
+                        )
+                    }
 
                     var inSettings by remember { mutableStateOf(false) }
                     var settingsGameKey by remember { mutableStateOf<String?>(null) }

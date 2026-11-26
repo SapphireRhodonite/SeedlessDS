@@ -187,6 +187,7 @@ object SaveLocation {
         CUSTOM -> customTree()?.let { runCatching { document(ctx, it, DocumentsContract.getTreeDocumentId(it)) }.getOrNull() }
         else -> when {
             romUri != null && romUri.scheme == "content" -> runCatching {
+                DocumentsContract.getTreeDocumentId(romUri)
                 val docId = DocumentsContract.getDocumentId(romUri)
                 val parent = if (docId.contains('/')) docId.substringBeforeLast('/') else docId.substringBefore(':') + ":"
                 document(ctx, romUri, parent)

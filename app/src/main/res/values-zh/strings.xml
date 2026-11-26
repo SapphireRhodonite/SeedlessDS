@@ -711,4 +711,5 @@
     <string name="screen_gap">屏幕间距</string>
     <string name="screen_gap_small">小</string>
     <string name="screen_gap_large">大</string>
+    <string name="library_single_rom_save_location">要打开此文件并使用应用存储中的存档吗？如需使用 ROM 所在目录的存档，请取消并将该文件夹添加到游戏库。</string>
 </resources>

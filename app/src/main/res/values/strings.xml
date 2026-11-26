@@ -830,4 +830,5 @@
     <string name="screen_gap">Screen gap</string>
     <string name="screen_gap_small">Small</string>
     <string name="screen_gap_large">Large</string>
+    <string name="library_single_rom_save_location">Open this file with saves in app storage? To use saves beside the ROM, cancel and add its folder to the library.</string>
 </resources>
