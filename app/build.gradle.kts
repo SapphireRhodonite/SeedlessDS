@@ -115,6 +115,12 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().withBuildType("playStore")) {
+        it.minSdk = 24
+    }
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
