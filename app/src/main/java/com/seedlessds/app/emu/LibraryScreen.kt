@@ -454,6 +454,8 @@ fun LibraryScreen(
         bottomBar = {
             GamepadHintsFooter(
                 modifier = Modifier.background(colors.bg).navigationBarsPadding(),
+                hintSpacing = if (LocalConfiguration.current.screenWidthDp < 600) 6.dp else 18.dp,
+                wrapHints = LocalConfiguration.current.screenWidthDp < 600,
                 hints = listOf(
                     GamepadHint(null, uiContext.getString(R.string.common_navigate)),
                     GamepadHint(uiContext.getString(R.string.button_a), uiContext.getString(R.string.common_play)),

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +44,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -239,59 +242,65 @@ fun SeedlessToggleRow(
 
 data class GamepadHint(val button: String?, val label: String)
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GamepadHintsFooter(
     hints: List<GamepadHint>,
     modifier: Modifier = Modifier,
     showTopBorder: Boolean = true,
+    hintSpacing: Dp = 18.dp,
+    wrapHints: Boolean = false,
 ) {
     val colors = seedless
+    val hintContent: @Composable () -> Unit = {
+        hints.forEach { hint ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (hint.button == null) {
+                    Icon(
+                        imageVector = Icons.Filled.SportsEsports,
+                        contentDescription = null,
+                        tint = colors.text3,
+                        modifier = Modifier.size(15.dp),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(17.dp)
+                            .border(1.5.dp, colors.text3, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = hint.button,
+                            color = colors.text3,
+                            fontSize = 9.sp,
+                            lineHeight = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                Text(
+                    text = hint.label,
+                    color = colors.text3,
+                    fontFamily = SeedlessMono,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(start = 6.dp),
+                )
+            }
+        }
+    }
     Column(modifier = modifier.fillMaxWidth()) {
         if (showTopBorder) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(colors.line))
         }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-        ) {
-            hints.forEach { hint ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (hint.button == null) {
-                        Icon(
-                            imageVector = Icons.Filled.SportsEsports,
-                            contentDescription = null,
-                            tint = colors.text3,
-                            modifier = Modifier.size(15.dp),
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(17.dp)
-                                .border(1.5.dp, colors.text3, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = hint.button,
-                                color = colors.text3,
-                                fontSize = 9.sp,
-                                lineHeight = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                    Text(
-                        text = hint.label,
-                        color = colors.text3,
-                        fontFamily = SeedlessMono,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(start = 6.dp),
-                    )
-                }
-            }
+        val rowModifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp)
+        val arrangement = Arrangement.spacedBy(hintSpacing, Alignment.CenterHorizontally)
+        if (wrapHints) {
+            FlowRow(modifier = rowModifier, horizontalArrangement = arrangement,
+                verticalArrangement = Arrangement.spacedBy(4.dp)) { hintContent() }
+        } else {
+            Row(modifier = rowModifier, horizontalArrangement = arrangement,
+                verticalAlignment = Alignment.CenterVertically) { hintContent() }
         }
     }
 }
