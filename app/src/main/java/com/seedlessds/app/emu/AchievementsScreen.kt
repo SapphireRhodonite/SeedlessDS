@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -44,7 +45,6 @@ import androidx.compose.material.icons.rounded.Leaderboard
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SportsEsports
-import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
@@ -62,12 +62,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -574,6 +576,32 @@ private fun ChallengeBadge(id: Int, ch: RaChallenge) {
 }
 
 @Composable
+private fun RaCompactIndicator(iconUrl: String?, value: String, bold: Boolean = false) {
+    val colors = seedless
+    var faded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(3000)
+        faded = true
+    }
+    val opacity by animateFloatAsState(if (faded) 0.5f else 1f, label = "ra-indicator-opacity")
+    Surface(modifier = Modifier.graphicsLayer { alpha = opacity }, shape = RoundedCornerShape(4.dp),
+        color = colors.surface, shadowElevation = 4.dp) {
+        Row(Modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Badge(iconUrl, 20.dp, dim = false)
+            Text(
+                text = value,
+                color = colors.text,
+                fontSize = 11.sp,
+                fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 3.dp).widthIn(max = 200.dp),
+            )
+        }
+    }
+}
+
+@Composable
 fun RaProgressPopup(modifier: Modifier = Modifier) {
     val prog by RetroAchievements.progressPopup
     AnimatedVisibility(
@@ -581,30 +609,7 @@ fun RaProgressPopup(modifier: Modifier = Modifier) {
         enter = fadeIn(tween(150)), exit = fadeOut(tween(150)), modifier = modifier
     ) {
         val p = prog ?: return@AnimatedVisibility
-        Box(Modifier.padding(8.dp).background(Color(0xCC0B0A0D), RoundedCornerShape(20.dp))) {
-            Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Badge(p.badgeUrl, 24.dp, dim = false)
-                Column(Modifier.padding(start = 8.dp)) {
-                    Text(
-                        text = p.title,
-                        color = Color.White,
-                        fontFamily = Manrope,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 170.dp),
-                    )
-                    Text(
-                        text = p.progress,
-                        color = SeedlessColors.gold,
-                        fontFamily = SeedlessMono,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-        }
+        RaCompactIndicator(p.badgeUrl, p.progress)
     }
 }
 
@@ -730,27 +735,11 @@ private fun MasteryCard(m: RaMastery) {
 @Composable
 fun RaLeaderboardTrackers(modifier: Modifier = Modifier) {
     val trackers = RetroAchievements.trackers
+    val gameIcon by RetroAchievements.gameIconUrl
     if (trackers.isEmpty()) return
-    Column(modifier, horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         trackers.entries.sortedBy { it.key }.take(4).forEach { (id, display) ->
-            key(id) {
-                Box(Modifier.background(Color(0xCC0B0A0D), RoundedCornerShape(8.dp))) {
-                    Row(
-                        Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Rounded.Timer, null, tint = SeedlessColors.gold, modifier = Modifier.size(12.dp))
-                        Text(
-                            text = display,
-                            color = Color.White,
-                            fontFamily = SeedlessMono,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(start = 5.dp),
-                        )
-                    }
-                }
-            }
+            key(id) { RaCompactIndicator(gameIcon, display.ifBlank { "--" }, bold = true) }
         }
     }
 }

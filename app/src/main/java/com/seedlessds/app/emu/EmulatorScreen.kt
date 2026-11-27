@@ -508,8 +508,11 @@ fun EmulatorScreen(
             if (com.seedlessds.app.ra.RetroAchievements.settings.showRichPresence)
                 RaRichPresenceBar(Modifier.align(Alignment.TopCenter).padding(top = 60.dp))
             RaChallengeIndicators(Modifier.align(Alignment.TopEnd).padding(top = 64.dp, end = 8.dp))
-            RaLeaderboardTrackers(Modifier.align(Alignment.TopEnd).padding(top = 116.dp, end = 8.dp))
-            RaProgressPopup(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp))
+            Column(Modifier.align(Alignment.TopStart).padding(start = 8.dp, top = 60.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                RaProgressPopup()
+                RaLeaderboardTrackers()
+            }
             RaLbToast(Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
         }
         RaUnlockOverlay(Modifier.align(Alignment.TopCenter))
